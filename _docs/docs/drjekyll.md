@@ -4,6 +4,7 @@ nav_order: 1
 parent: Documentation
 description: A GitHub Action to build and deploy documentation using Dr. Jekyll.
 layout: default
+has_toc: false
 ---
 
 <!-- markdownlint-disable MD022 MD025 -->
