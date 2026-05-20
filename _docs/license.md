@@ -12,4 +12,4 @@ no_toc: true
 
 ---
 
-{% include LICENSE.md %}
+{% include LICENSE %}
