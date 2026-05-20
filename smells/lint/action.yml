@@ -1,0 +1,87 @@
+---
+name: Lint Codebase
+description: Run linters to ensure code quality and consistency across the codebase.
+inputs:
+  token:
+    description: "GitHub token for authentication (automatically provided by GitHub Actions)"
+    required: true
+  default_branch:
+    description: "Default branch to compare against for linting (default: develop)"
+    required: false
+    default: "develop"
+  delete_previous_comment:
+    description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true)"
+    required: false
+    default: "true"
+
+  super_linter_env_file:
+    description: "Path to a .env file to load environment variables for Super-Linter (optional)"
+    required: false
+
+  filter_regex_exclude:
+    description: "Regex pattern to exclude files/directories from linting (default: (\\.devcontainer|\\.github/linters|docs|\\.vscode)/|.*/output/)"
+    required: false
+    default: "(\\.devcontainer|\\.github/linters|docs|\\.vscode)/|.*/output/|CHANGELOG\\.md)"
+
+  validate_all_codebase:
+    description: "When 'true', validate the entire codebase instead of just changed files. (default: false)"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+      # load a .env for super linter
+    - run: |
+        echo "::group:: Load Super-Linter Environment Variables"
+        if [[ -f "${{ inputs.super_linter_env_file }}" ]]; then
+          echo "Loading environment variables from ${{ inputs.super_linter_env_file }}"
+          set -o allexport
+          source "${{ inputs.super_linter_env_file }}"
+          set +o allexport
+        else
+          echo "No .env file provided for Super-Linter, proceeding without loading additional environment variables." >&2
+        fi
+        echo "::endgroup::"
+      shell: bash
+
+    # because super-linter does not currently edit their existing comment, we need to find and delete it before
+    # running the linter to avoid confusion with stale comments
+    - name: Find existing Super-Linter comment
+      id: find_comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/find-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: "# Super-linter summary"
+        token: ${{ inputs.token }}
+
+    - name: Delete existing Super-Linter comment
+      if: github.event_name == 'pull_request' && inputs.delete_previous_comment == 'true' && steps.find_comment.outputs.comment-id != ''
+      uses: actions/github-script@v9
+      env:
+        COMMENT_ID: ${{ steps.find_comment.outputs.comment-id }}
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          github.rest.issues.deleteComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            comment_id: parseInt(process.env.COMMENT_ID)
+          })
+
+    - name: Super-Linter
+      uses: super-linter/super-linter/slim@v8
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        # Allow ShellCheck to follow sourced files (match local shellcheck -x behavior)
+        SHELLCHECK_OPTS: -x
+        VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+        DEFAULT_BRANCH: ${{ inputs.default_branch }}
+        IGNORE_GITIGNORED_FILES: true
+        FILTER_REGEX_EXCLUDE: ${{ inputs.filter_regex_exclude }}

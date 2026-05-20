@@ -1,0 +1,11 @@
+---
+title: "GitHub Actions"
+description: "A collection of GitHub Actions for projects."
+
+copyright: "&copy; 2026 Ryan Conrad. All rights reserved."
+
+version: "v1"
+
+aux_links:
+  "GitHub":
+    - "https://github.com/camalot/actions"

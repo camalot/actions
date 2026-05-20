@@ -1,0 +1,275 @@
+---
+name: Release Version
+description: >
+  Generate the changelog via git-cliff (prepending only the new version's
+  section to CHANGELOG.md), commit and push it, create/move the supplied tags
+  (deleting any pre-existing local or remote copies first), then create a
+  GitHub Release whose body contains only the changelog entries for the new
+  version.
+inputs:
+  tag_major:
+    description: 'Major tag form, e.g. v1. Will be created and moved to point at the new commit.'
+    required: true
+  tag_major_minor:
+    description: 'Major.Minor tag form, e.g. v1.2. Will be created and moved to point at the new commit.'
+    required: true
+  tag_major_minor_build:
+    description: 'Full Major.Minor.Build tag form, e.g. v1.2.3. Used as the GitHub Release tag.'
+    required: true
+  changelog_file:
+    description: 'Path (relative to repo root) of the changelog file to update.'
+    required: false
+    default: 'CHANGELOG.md'
+  prerelease:
+    description: 'When "true", mark the GitHub Release as a prerelease.'
+    required: false
+    default: 'false'
+  draft:
+    description: 'When "true", create the GitHub Release as a draft.'
+    required: false
+    default: 'false'
+  token:
+    description: 'GitHub token used for git-cliff PR metadata lookups and the GitHub Release. Defaults to the built-in token.'
+    required: false
+    default: ${{ github.token }}
+  git_user_name:
+    description: 'Author name for the changelog commit.'
+    required: false
+    default: 'github-actions[bot]'
+  git_user_email:
+    description: 'Author email for the changelog commit.'
+    required: false
+    default: 'github-actions[bot]@users.noreply.github.com'
+  chart_version_file:
+    description: 'Path to a Chart.yaml file whose version field should be updated to match the new version.'
+    required: false
+    default: 'chart/Chart.yaml'
+  jekyll_config_file:
+    description: 'Path to a Jekyll _config.yml file whose version field should be updated to match the new version.'
+    required: false
+    default: 'docs/_config.yml'
+outputs:
+  release_notes_file:
+    description: 'Path to the rendered release-notes file (only the new version section).'
+    value: ${{ steps.notes.outputs.path }}
+  release_url:
+    description: 'URL of the created GitHub Release.'
+    value: ${{ steps.gh_release.outputs.url }}
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        # Keep the GITHUB_TOKEN attached so `git push` for the changelog
+        # commit and tags is authenticated.
+        persist-credentials: true
+
+    - name: Check for .nvmrc
+      id: nvmrc_check
+      shell: bash
+      run: |
+        if [[ -f ".nvmrc" ]]; then
+          echo "exists=true" >> "${GITHUB_OUTPUT}"
+        else
+          echo "exists=false" >> "${GITHUB_OUTPUT}"
+        fi
+
+    - uses: actions/setup-node@v6
+      if: steps.nvmrc_check.outputs.exists == 'true'
+      with:
+        node-version-file: '.nvmrc'
+    - uses: actions/setup-node@v6
+      if: steps.nvmrc_check.outputs.exists == 'false'
+      with:
+        node-version: 'latest'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm install --global git-cliff
+
+    - name: Configure git
+      shell: bash
+      env:
+        GIT_USER_NAME: ${{ inputs.git_user_name }}
+        GIT_USER_EMAIL: ${{ inputs.git_user_email }}
+      run: |
+        set -euo pipefail
+        echo "::group::Configure git user"
+        git config user.name  "${GIT_USER_NAME}"
+        git config user.email "${GIT_USER_EMAIL}"
+        echo "::endgroup::"
+
+    # Render only the new version's changelog section first, before any
+    # changelog-commit appears in the unreleased range. This is what becomes
+    # the body of the GitHub Release.
+    - name: Render release notes (this version only)
+      id: notes
+      shell: bash
+      env:
+        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        notes_path="${RUNNER_TEMP:-/tmp}/release-notes-${NEXT_TAG}.md"
+        # --unreleased: only commits since the most recent tag.
+        # --tag: render that unreleased section under NEXT_TAG instead of
+        #        "[unreleased]" so the heading in the release body is correct.
+        # --strip header: drop the top-of-changelog header so the body
+        #        contains only the version section.
+        npx git-cliff \
+          --tag "${NEXT_TAG}" \
+          --unreleased \
+          --strip header \
+          --output "${notes_path}"
+
+        echo "path=${notes_path}" >> "${GITHUB_OUTPUT}"
+
+        {
+          echo "# ${NEXT_TAG} Release Notes"
+          cat "${notes_path}"
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+        echo "::group::${NEXT_TAG} release notes"
+        cat "${notes_path}"
+        echo "::endgroup::"
+
+    # Prepend the same version section to the persistent CHANGELOG.md so the
+    # file accumulates one entry per release (newest on top, matching the
+    # repository's cliff.toml template).
+    - name: Update CHANGELOG.md
+      shell: bash
+      env:
+        CHANGELOG_FILE: ${{ inputs.changelog_file }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        echo "::group::Prepend ${NEXT_TAG} section to ${CHANGELOG_FILE}"
+        if [[ ! -f "${CHANGELOG_FILE}" ]]; then
+          touch "${CHANGELOG_FILE}"
+        fi
+        npx git-cliff \
+          --tag "${NEXT_TAG}" \
+          --unreleased \
+          --prepend "${CHANGELOG_FILE}"
+        echo "::endgroup::"
+
+    - name: Update Version Files
+      shell: bash
+      env:
+        NEXT_VERSION: ${{ inputs.tag_major_minor_build }}
+      run: |
+        set -euo pipefail
+        echo "::group::Update version files"
+        if [[ -f ".version" ]]; then
+          echo "${NEXT_VERSION#v}" > .version
+          git add .version
+        fi
+
+        if [[ -f "${{ inputs.chart_version_file }}" ]]; then
+          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${{ inputs.chart_version_file }}"
+          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${{ inputs.chart_version_file }}"
+          git add "${{ inputs.chart_version_file }}"
+        fi
+
+        if [[ -f "${{ inputs.jekyll_config_file }}" ]]; then
+          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${{ inputs.jekyll_config_file }}"
+          git add "${{ inputs.jekyll_config_file }}"
+        fi
+        echo "::endgroup::"
+
+    - name: Commit Release Changes
+      id: commit
+      shell: bash
+      env:
+        CHANGELOG_FILE: ${{ inputs.changelog_file }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+      run: |
+        set -euo pipefail
+        echo "::group::Commit Changelog updates"
+        git add -- "${CHANGELOG_FILE}"
+
+        if git diff --cached --quiet; then
+          echo "No changelog changes to commit."
+          echo "committed=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+        echo "::endgroup::"
+
+        echo "::group::Commit and push release updates"
+        git commit -m "chore(release): update changelog for ${NEXT_TAG}"
+        git push origin "HEAD:${GITHUB_REF_NAME}"
+        echo "committed=true" >> "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
+    - name: Replace tags
+      shell: bash
+      env:
+        TAG_MAJOR: ${{ inputs.tag_major }}
+        TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
+        TAG_MAJOR_MINOR_BUILD: ${{ inputs.tag_major_minor_build }}
+      run: |
+        set -euo pipefail
+        echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_BUILD}"
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_BUILD}"; do
+          # Delete locally and on the remote if it already exists, so the
+          # floating tags (vMAJOR, vMAJOR.MINOR) can be moved to the new commit.
+          git tag -d "${tag}" 2>/dev/null || true
+          git push origin ":refs/tags/${tag}" 2>/dev/null || true
+        done
+
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_BUILD}"; do
+          git tag "${tag}"
+          git push origin "${tag}"
+        done
+        echo "::endgroup::"
+
+    - name: Create GitHub Release
+      id: gh_release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        NOTES_PATH: ${{ steps.notes.outputs.path }}
+        PRERELEASE: ${{ inputs.prerelease }}
+        DRAFT: ${{ inputs.draft }}
+      run: |
+        set -euo pipefail
+        echo "::group::Create GitHub Release ${NEXT_TAG}"
+        # Delete an existing release for this tag (if any) so we can create
+        # a fresh one whose body reflects the just-generated notes.
+        gh release delete "${NEXT_TAG}" --yes 2>/dev/null || true
+
+        flags=()
+        [[ "${PRERELEASE}" == "true" ]] && flags+=(--prerelease)
+        [[ "${DRAFT}" == "true" ]] && flags+=(--draft)
+
+        url="$(
+          gh release create "${NEXT_TAG}" \
+            --title "${NEXT_TAG}" \
+            --notes-file "${NOTES_PATH}" \
+            --target "$(git rev-parse HEAD)" \
+            "${flags[@]}"
+        )"
+        echo "url=${url}" >> "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
+    - name: Summary
+      shell: bash
+      env:
+        TAG_MAJOR: ${{ inputs.tag_major }}
+        TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
+        TAG_MAJOR_MINOR_BUILD: ${{ inputs.tag_major_minor_build }}
+        CHANGELOG_COMMITTED: ${{ steps.commit.outputs.committed }}
+        RELEASE_URL: ${{ steps.gh_release.outputs.url }}
+      run: |
+        {
+          echo "### Release"
+          echo ""
+          echo "- Tag (build): \`${TAG_MAJOR_MINOR_BUILD}\`"
+          echo "- Tag (minor): \`${TAG_MAJOR_MINOR}\`"
+          echo "- Tag (major): \`${TAG_MAJOR}\`"
+          echo "- Changelog committed: \`${CHANGELOG_COMMITTED:-false}\`"
+          echo "- Release: ${RELEASE_URL:-n/a}"
+        } >> "${GITHUB_STEP_SUMMARY}"

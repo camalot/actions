@@ -1,0 +1,57 @@
+---
+name: Publish Documentation
+description: A GitHub Action to build and deploy documentation using Dr. Jekyll.
+inputs:
+  token:
+    description: "GitHub token for authentication (automatically provided by GitHub Actions)"
+    required: true
+  jekyll_env:
+    description: "The Jekyll environment to build for (default: production)"
+    required: false
+    default: "production"
+  input_dir:
+    description: "The directory containing the Jekyll source files (default: ./docs)"
+    required: false
+    default: "./docs"
+  output_dir:
+    description: "The directory where the built site will be output (default: ./_site)"
+    required: false
+    default: "./_site"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+
+    - name: Setup Pages
+      id: pages
+      uses: actions/configure-pages@v6
+      env:
+        token: ${{ inputs.token }}
+
+    - name: Dr. Jekyll Build
+      # zizmor: ignore[ref-confusion]
+      uses: camalot/drjekyll-action@v1
+      env:
+        JEKYLL_ENV: ${{ inputs.jekyll_env }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      with:
+        input_dir: ${{ inputs.input_dir }}
+        output_dir: ${{ inputs.output_dir }}
+        url: ${{ steps.pages.outputs.base_url }}
+        baseurl: ""
+
+    - name: Upload artifact
+      if: "${{ !env.ACT }}"
+      uses: actions/upload-pages-artifact@v5
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+
+    - name: Deploy to GitHub Pages
+      if: ${{ !env.ACT }}
+      id: deployment
+      uses: actions/deploy-pages@v5
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}

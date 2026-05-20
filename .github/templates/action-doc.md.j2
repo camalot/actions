@@ -1,0 +1,26 @@
+---
+title: {{ action_name }}
+nav_order: {{ nav_order }}
+{%- if parent %}
+parent: {{ parent }}
+{%- endif %}
+{%- if description %}
+description: {{ description }}
+{%- endif %}
+layout: default
+---
+
+<!-- markdownlint-disable MD022 MD025 -->
+# {{ action_name }}
+{% raw %}{: .no_toc }{% endraw %}
+
+{{ description }}
+
+{% raw %}{% include toc.md %}{% endraw %}
+
+---
+
+{%- if action_readme_symlink %}
+
+{% raw %}{% include {% endraw %}{{ action_readme_symlink }}{% raw %} %}{% endraw %}
+{%- endif %}

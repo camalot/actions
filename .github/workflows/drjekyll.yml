@@ -1,0 +1,95 @@
+---
+name: Documentation Build and Publish
+on: # yamllint disable-line rule:truthy
+  # push:
+  #   branches:
+  #     - main
+  #     - develop
+
+  workflow_dispatch:
+
+permissions: {}
+jobs:
+  prepare-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      statuses: write
+      issues: read
+      checks: write
+      pull-requests: write
+      pages: write
+      id-token: write
+    outputs:
+      ignore_commit: ${{ steps.check-commit.outputs.ignore_commit }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - id: check-commit
+        name: Check if last commit was to update generated documentation
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # was this triggered by a push that was just to commit the generated documentation?
+          if [[ "$(git log -1 --pretty=%B)" == "chore(ignore): generated documentation" ]]; then
+            echo "This commit was just to update generated documentation, skipping prepare-docs step to avoid infinite loop"
+            echo "ignore_commit=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "ignore_commit=false" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Prepare documentation
+        if: steps.check-commit.outputs.ignore_commit != 'true'
+        shell: bash
+        run: |
+          set -xeuo pipefail
+          echo "::group::Setting up Python environment for documentation preparation"
+          python3 -m venv /tmp/prepare-docs-venv
+          source /tmp/prepare-docs-venv/bin/activate
+          pip install --quiet .github/scripts/prepare-docs/
+          echo "::endgroup::"
+          echo "::group::Running documentation preparation script"
+          python .github/scripts/prepare-docs/main.py | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "::endgroup::"
+
+          # are there changes to commit after running the script?
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "::group::Changes detected, committing and pushing changes"
+            echo "Changes detected after running documentation preparation script, committing and pushing changes"
+            git add .
+            git commit -m "chore(ignore): generated documentation"
+            git push
+            echo "::endgroup::"
+          fi
+
+  publish-documentation:
+    runs-on: ubuntu-latest
+    if: needs.prepare-docs.outputs.ignore_commit != 'true'
+    permissions:
+      contents: read
+      statuses: write
+      issues: read
+      checks: write
+      pull-requests: write
+      pages: write
+      id-token: write
+    needs:
+      - prepare-docs
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Dr. Jekyll Build
+        # zizmor: ignore[ref-confusion]
+        uses: camalot/actions/docs/drjekyll@v1
+        with:
+          input_dir: ./_docs
+          output_dir: ./_site
+          jekyll_env: production
+          token: ${{ secrets.token }}

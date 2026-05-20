@@ -1,0 +1,19 @@
+{
+  "cSpell.words": [
+    "allexport",
+    "Camalot",
+    "drjekyll",
+    "endgroup",
+    "endraw",
+    "inplace",
+    "MJMB",
+    "nvmrc",
+    "pipefail",
+    "SHELLCHECK",
+    "SRECORE",
+    "TMJM",
+    "TMJMB",
+    "zizmor"
+  ],
+  "python.terminal.useEnvFile": true
+}
