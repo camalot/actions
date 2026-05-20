@@ -69,7 +69,6 @@ jobs:
 
   publish-documentation:
     runs-on: ubuntu-latest
-    if: needs.prepare-docs.outputs.ignore_commit != 'true'
     permissions:
       contents: read
       statuses: write
