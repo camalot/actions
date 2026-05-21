@@ -6,9 +6,9 @@ inputs:
     description: "GitHub token for authentication (automatically provided by GitHub Actions)"
     required: true
   default_branch:
-    description: "Default branch to compare against for linting (default: develop)"
+    description: "Default branch to compare against for linting (default: auto-detected from the repository settings)"
     required: false
-    default: "main"
+    default: ""
   delete_previous_comment:
     description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true)"
     required: false
@@ -36,16 +36,16 @@ runs:
         fetch-depth: 0
         persist-credentials: false
 
-      # load a .env for super linter
+    # load a .env for super linter
     - run: |
         echo "::group:: Load Super-Linter Environment Variables"
-        if [[ -n "${{ inputs.super_linter_env_file }}" && -f "${{ inputs.super_linter_env_file }}" ]]; then
-          echo "Loading environment variables from ${{ inputs.super_linter_env_file }}"
+        if [[ -n "$INPUTS_SUPER_LINTER_ENV_FILE" && -f "$INPUTS_SUPER_LINTER_ENV_FILE" ]]; then
+          echo "Loading environment variables from $INPUTS_SUPER_LINTER_ENV_FILE"
           while IFS= read -r line || [[ -n "$line" ]]; do
             # skip blank lines and comments
             [[ -z "$line" || "$line" == \#* ]] && continue
             echo "$line" >> "$GITHUB_ENV"
-          done < "${{ inputs.super_linter_env_file }}"
+          done < "$INPUTS_SUPER_LINTER_ENV_FILE"
         else
           echo "No .env file provided for Super-Linter, proceeding without loading additional environment variables." >&2
         fi
@@ -54,9 +54,9 @@ runs:
 
     - run: |
         echo "::group:: Export DEFAULT_BRANCH for Super-Linter"
-        if [[ -n "${{ inputs.default_branch }}" ]]; then
-          echo "Using provided default branch: ${{ inputs.default_branch }}"
-          echo "DEFAULT_BRANCH=${{ inputs.default_branch }}" >> $GITHUB_ENV
+        if [[ -n "$INPUTS_DEFAULT_BRANCH" ]]; then
+          echo "Using provided default branch: $INPUTS_DEFAULT_BRANCH"
+          echo "DEFAULT_BRANCH=$INPUTS_DEFAULT_BRANCH" >> "$GITHUB_ENV"
         fi
         echo "::endgroup::"
       shell: bash
