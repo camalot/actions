@@ -8,10 +8,11 @@ Runs [Super-Linter](https://github.com/super-linter/super-linter) across the cod
 2. Loads additional Super-Linter environment variables from a `.env` file (if provided), then falls back to action inputs for any variable not set by the file
 3. Finds and deletes any existing Super-Linter summary comment on the pull request (when `delete_previous_comment` is `true`)
 4. Runs `super-linter/super-linter/slim` against the codebase
-   - By default only changed files are linted (relative to `default_branch`)
-   - Files matching `filter_regex_exclude` are skipped
-   - Files listed in `.gitignore` are skipped
-   - ShellCheck runs with `-x` to follow sourced files, matching local behavior
+
+    - By default only changed files are linted (relative to `default_branch`)
+    - Files matching `filter_regex_exclude` are skipped
+    - Files listed in `.gitignore` are skipped
+    - ShellCheck runs with `-x` to follow sourced files, matching local behavior
 
 ## Requirements
 
