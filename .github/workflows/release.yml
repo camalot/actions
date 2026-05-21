@@ -1,5 +1,5 @@
 ---
-name: Documentation Build and Publish
+name: Publish Release
 on: # yamllint disable-line rule:truthy
   # push:
   #   branches:
