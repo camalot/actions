@@ -1,3 +1,27 @@
+## [1.0.2] - 2026-05-21
+
+### 🐛 Bug Fixes
+
+- Only set default branch if it is defined by @camalot
+
+- Resolve so zizmor issues by @camalot
+
+- Resolve so zizmor issues by @camalot
+
+- Resolve some zizmor issues by @camalot
+
+- Resolve some zizmor issues by @camalot
+
+- Fix the cliff.toml by @camalot
+
+- Resolve release step permissions by @camalot
+
+- Rename [tag_]major_minor_build to [tag_]major_minor_patch by @camalot
+
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.0.1...v1.0.2
+
 ## [1.0.1] - 2026-05-21
 
 ### 🐛 Bug Fixes
