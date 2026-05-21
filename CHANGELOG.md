@@ -1,5 +1,10 @@
 ## [1.1.1] - 2026-05-21
 
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.1.1...v1.1.1
+
+## [1.1.1] - 2026-05-21
+
 ### 🐛 Bug Fixes
 
 - Fix multi-level generation by @camalot
