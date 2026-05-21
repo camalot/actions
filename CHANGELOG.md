@@ -1,3 +1,22 @@
+## [1.1.0] - 2026-05-21
+
+### 🚀 Features
+
+- Added pytest with coverage action by @camalot
+
+- Resolve push conflict with a rebase first by @camalot
+
+
+### 🐛 Bug Fixes
+
+- Better handle when a user passes the inputs as environment variables by @camalot
+
+- Fix indent on readme by @camalot
+
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.0.2...v1.1.0
+
 ## [1.0.2] - 2026-05-21
 
 ### 🐛 Bug Fixes
