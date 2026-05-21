@@ -131,6 +131,7 @@ jobs:
     if: (success())
     needs:
       - version
+      - lint
     permissions:
       # write CHANGELOG.md commit, tags, and GitHub Release
       contents: write
