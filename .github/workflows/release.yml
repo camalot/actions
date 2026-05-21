@@ -127,6 +127,7 @@ jobs:
             echo "Changes detected after running documentation preparation script, committing and pushing changes"
             git add .
             git commit -m "chore(ignore): generated documentation"
+            git pull --rebase
             git push
             echo "::endgroup::"
           fi
