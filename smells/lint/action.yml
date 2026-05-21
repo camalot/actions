@@ -3,28 +3,29 @@ name: Lint Codebase
 description: Run linters to ensure code quality and consistency across the codebase.
 inputs:
   token:
-    description: "GitHub token for authentication (automatically provided by GitHub Actions)"
-    required: true
+    description: "GitHub token for authentication. Defaults to the built-in GITHUB_TOKEN. The GITHUB_TOKEN env var is the underlying mechanism used by Super-Linter and the comment steps."
+    required: false
+    default: ${{ github.token }}
   default_branch:
-    description: "Default branch to compare against for linting (default: auto-detected from the repository settings)"
+    description: "Default branch to compare against for linting (default: auto-detected from the repository settings). Override via DEFAULT_BRANCH env var in super_linter_env_file."
     required: false
     default: ""
   delete_previous_comment:
-    description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true)"
+    description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true). Override via DELETE_PREVIOUS_COMMENT env var in super_linter_env_file."
     required: false
     default: "true"
 
   super_linter_env_file:
-    description: "Path to a .env file to load environment variables for Super-Linter (optional)"
+    description: "Path to a .env file to load environment variables for Super-Linter (optional). Override via SUPER_LINTER_ENV_FILE workflow env var."
     required: false
 
   filter_regex_exclude:
-    description: "Regex pattern to exclude files/directories from linting (default: `(\\.devcontainer|\\.github/linters|docs|\\.vscode)/|.*/output/|CHANGELOG\\.md`). If FILTER_REGEX_EXCLUDE is set, it will be used instead of the default pattern."
+    description: "Regex pattern to exclude files/directories from linting (default: `(\\.devcontainer|\\.github/linters|docs|\\.vscode)/|.*/output/|CHANGELOG\\.md`). Override via FILTER_REGEX_EXCLUDE env var in super_linter_env_file."
     required: false
     default: "(\\.devcontainer|\\.github/linters|docs|\\.vscode)/|.*/output/|CHANGELOG\\.md"
 
   validate_all_codebase:
-    description: "When 'true', validate the entire codebase instead of just changed files. (default: false)"
+    description: "When 'true', validate the entire codebase instead of just changed files. (default: false). Override via VALIDATE_ALL_CODEBASE env var in super_linter_env_file."
     required: false
     default: "false"
 
@@ -36,17 +37,23 @@ runs:
         fetch-depth: 0
         persist-credentials: false
 
-    # load a .env for super linter
+    # Load a .env file for Super-Linter, then fall back to inputs for any var not set by the file.
     - run: | # zizmor: ignore[github-env]
         echo "::group:: Load Super-Linter Environment Variables"
         filter_regex_set=false
+        validate_all_codebase_set=false
+        default_branch_set=false
+        delete_previous_comment_set=false
         if [[ -n "$SUPER_LINTER_ENV_FILE" && -f "$SUPER_LINTER_ENV_FILE" ]]; then
           echo "Loading environment variables from $SUPER_LINTER_ENV_FILE"
           while IFS= read -r line || [[ -n "$line" ]]; do
             # skip blank lines and comments
             [[ -z "$line" || "$line" == \#* ]] && continue
             echo "$line" >> "$GITHUB_ENV"
-            [[ "$line" == FILTER_REGEX_EXCLUDE=* ]] && filter_regex_set=true
+            [[ "$line" == FILTER_REGEX_EXCLUDE=* ]]       && filter_regex_set=true
+            [[ "$line" == VALIDATE_ALL_CODEBASE=* ]]      && validate_all_codebase_set=true
+            [[ "$line" == DEFAULT_BRANCH=* ]]             && default_branch_set=true
+            [[ "$line" == DELETE_PREVIOUS_COMMENT=* ]]    && delete_previous_comment_set=true
           done < "$SUPER_LINTER_ENV_FILE"
         else
           echo "No .env file provided for Super-Linter, proceeding without loading additional environment variables." >&2
@@ -54,21 +61,23 @@ runs:
         if [[ "$filter_regex_set" == false ]]; then
           echo "FILTER_REGEX_EXCLUDE=${INPUT_FILTER_REGEX_EXCLUDE}" >> "$GITHUB_ENV"
         fi
-        echo "::endgroup::"
-      shell: bash
-      env:
-        SUPER_LINTER_ENV_FILE: ${{ inputs.super_linter_env_file }}
-        INPUT_FILTER_REGEX_EXCLUDE: ${{ inputs.filter_regex_exclude }}
-
-    - run: | # zizmor: ignore[github-env]
-        echo "::group:: Export DEFAULT_BRANCH for Super-Linter"
-        if [[ -n "$INPUTS_DEFAULT_BRANCH" ]]; then
-          echo "Using provided default branch: $INPUTS_DEFAULT_BRANCH"
-          echo "DEFAULT_BRANCH=$INPUTS_DEFAULT_BRANCH" >> "$GITHUB_ENV"
+        if [[ "$validate_all_codebase_set" == false ]]; then
+          echo "VALIDATE_ALL_CODEBASE=${INPUT_VALIDATE_ALL_CODEBASE}" >> "$GITHUB_ENV"
+        fi
+        if [[ "$default_branch_set" == false && -n "${INPUT_DEFAULT_BRANCH}" ]]; then
+          echo "DEFAULT_BRANCH=${INPUT_DEFAULT_BRANCH}" >> "$GITHUB_ENV"
+        fi
+        if [[ "$delete_previous_comment_set" == false ]]; then
+          echo "DELETE_PREVIOUS_COMMENT=${INPUT_DELETE_PREVIOUS_COMMENT}" >> "$GITHUB_ENV"
         fi
         echo "::endgroup::"
       shell: bash
-      if: inputs.default_branch != ''
+      env:
+        SUPER_LINTER_ENV_FILE: ${{ env.SUPER_LINTER_ENV_FILE || inputs.super_linter_env_file }}
+        INPUT_FILTER_REGEX_EXCLUDE: ${{ inputs.filter_regex_exclude }}
+        INPUT_VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
+        INPUT_DEFAULT_BRANCH: ${{ inputs.default_branch }}
+        INPUT_DELETE_PREVIOUS_COMMENT: ${{ inputs.delete_previous_comment }}
 
     # because super-linter does not currently edit their existing comment, we need to find and delete it before
     # running the linter to avoid confusion with stale comments
@@ -82,7 +91,7 @@ runs:
         token: ${{ inputs.token }}
 
     - name: Delete existing Super-Linter comment
-      if: github.event_name == 'pull_request' && inputs.delete_previous_comment == 'true' && steps.find_comment.outputs.comment-id != ''
+      if: github.event_name == 'pull_request' && env.DELETE_PREVIOUS_COMMENT == 'true' && steps.find_comment.outputs.comment-id != ''
       uses: actions/github-script@v9
       env:
         COMMENT_ID: ${{ steps.find_comment.outputs.comment-id }}
@@ -98,10 +107,10 @@ runs:
     - name: Super-Linter
       uses: super-linter/super-linter/slim@v8
       env:
-        GITHUB_TOKEN: ${{ inputs.token }}
+        GITHUB_TOKEN: ${{ inputs.token || env.GITHUB_TOKEN }}
         # Allow ShellCheck to follow sourced files (match local shellcheck -x behavior)
         SHELLCHECK_OPTS: -x
-        VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
-        DEFAULT_BRANCH: ${{ inputs.default_branch }}
+        VALIDATE_ALL_CODEBASE: ${{ env.VALIDATE_ALL_CODEBASE }}
+        DEFAULT_BRANCH: ${{ env.DEFAULT_BRANCH }}
         IGNORE_GITIGNORED_FILES: true
         FILTER_REGEX_EXCLUDE: ${{ env.FILTER_REGEX_EXCLUDE }}
