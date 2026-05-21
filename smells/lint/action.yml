@@ -37,7 +37,7 @@ runs:
         persist-credentials: false
 
     # load a .env for super linter
-    - run: |
+    - run: | # zizmor: ignore[github-env]
         echo "::group:: Load Super-Linter Environment Variables"
         if [[ -n "$SUPER_LINTER_ENV_FILE" && -f "$SUPER_LINTER_ENV_FILE" ]]; then
           echo "Loading environment variables from $SUPER_LINTER_ENV_FILE"
@@ -52,7 +52,7 @@ runs:
         echo "::endgroup::"
       shell: bash
 
-    - run: |
+    - run: | # zizmor: ignore[github-env]
         echo "::group:: Export DEFAULT_BRANCH for Super-Linter"
         if [[ -n "$INPUTS_DEFAULT_BRANCH" ]]; then
           echo "Using provided default branch: $INPUTS_DEFAULT_BRANCH"
