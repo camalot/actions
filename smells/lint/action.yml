@@ -52,6 +52,16 @@ runs:
         echo "::endgroup::"
       shell: bash
 
+    - run: |
+        echo "::group:: Export DEFAULT_BRANCH for Super-Linter"
+        if [[ -n "${{ inputs.default_branch }}" ]]; then
+          echo "Using provided default branch: ${{ inputs.default_branch }}"
+          echo "DEFAULT_BRANCH=${{ inputs.default_branch }}" >> $GITHUB_ENV
+        fi
+        echo "::endgroup::"
+      shell: bash
+      if: inputs.default_branch != ''
+
     # because super-linter does not currently edit their existing comment, we need to find and delete it before
     # running the linter to avoid confusion with stale comments
     - name: Find existing Super-Linter comment
