@@ -22,21 +22,21 @@ If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the
 ## Inputs
 
 | Input | Required | Default | Description |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `default_version` | No | `v0.1.0` | Fallback version (with leading `v`) used when no prior tags exist or when `git-cliff` cannot determine a bumped version. |
 
 ## Outputs
 
 | Output | Example | Description |
-|---|---|---|
+| --- | --- | --- |
 | `current_version` | `1.2.3` | The most recent `v*` tag in the repo, without the leading `v`. |
 | `next_version` | `1.2.4` | The next version determined by `git-cliff`, without the leading `v`. |
 | `major` | `1` | Major component of `next_version`. |
 | `major_minor` | `1.2` | Major.Minor of `next_version`. |
-| `major_minor_build` | `1.2.4` | Full Major.Minor.Build of `next_version`. |
+| `major_minor_patch` | `1.2.4` | Full Major.Minor.Patch of `next_version`. |
 | `tag_major` | `v1` | Major tag form with `v` prefix. |
 | `tag_major_minor` | `v1.2` | Major.Minor tag form with `v` prefix. |
-| `tag_major_minor_build` | `v1.2.4` | Full tag form with `v` prefix. |
+| `tag_major_minor_patch` | `v1.2.4` | Full tag form with `v` prefix. |
 
 ## Examples
 
@@ -67,7 +67,7 @@ jobs:
         with:
           default_version: 'v1.0.0'
 
-      - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_build }}"
+      - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
 ```
 
 ---
@@ -86,8 +86,8 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "${{ steps.version.outputs.tag_major_minor_build }}"
-          git push origin "${{ steps.version.outputs.tag_major_minor_build }}"
+          git tag "${{ steps.version.outputs.tag_major_minor_patch }}"
+          git push origin "${{ steps.version.outputs.tag_major_minor_patch }}"
 ```
 
 ---
@@ -99,7 +99,7 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      tag: ${{ steps.version.outputs.tag_major_minor_build }}
+      tag: ${{ steps.version.outputs.tag_major_minor_patch }}
     steps:
       - id: version
         uses: camalot/actions/version/get@v1
@@ -128,7 +128,7 @@ jobs:
       - name: Build and push image
         run: |
           docker build \
-            -t myapp:${{ steps.version.outputs.tag_major_minor_build }} \
+            -t myapp:${{ steps.version.outputs.tag_major_minor_patch }} \
             -t myapp:${{ steps.version.outputs.tag_major_minor }} \
             -t myapp:${{ steps.version.outputs.tag_major }} \
             -t myapp:latest \

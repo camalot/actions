@@ -91,7 +91,7 @@ docs(version/get): document all output fields
 A breaking change must include `BREAKING CHANGE:` in the commit footer, or append `!` after the type:
 
 ```text
-feat(version/release)!: rename tag_build input to tag_major_minor_build
+feat(version/release)!: rename tag_build input to tag_major_minor_patch
 ```
 
 ---

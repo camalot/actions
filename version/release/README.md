@@ -36,15 +36,15 @@ permissions:
 ### Required
 
 | Input | Description |
-|---|---|
+| --- | --- |
 | `tag_major` | Major tag form, e.g. `v1`. Created and moved to point at the new commit. |
 | `tag_major_minor` | Major.Minor tag form, e.g. `v1.2`. Created and moved to point at the new commit. |
-| `tag_major_minor_build` | Full Major.Minor.Build tag, e.g. `v1.2.3`. Used as the GitHub Release tag. |
+| `tag_major_minor_patch` | Full Major.Minor.Patch tag, e.g. `v1.2.3`. Used as the GitHub Release tag. |
 
 ### Optional
 
 | Input | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `changelog_file` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
 | `prerelease` | `false` | When `true`, mark the GitHub Release as a prerelease. |
 | `draft` | `false` | When `true`, create the GitHub Release as a draft. |
@@ -79,7 +79,7 @@ jobs:
         with:
           tag_major:             ${{ steps.version.outputs.tag_major }}
           tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ steps.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
 ```
 
 ---
@@ -91,7 +91,7 @@ jobs:
         with:
           tag_major:             ${{ steps.version.outputs.tag_major }}
           tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ steps.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
           prerelease: 'true'
 ```
 
@@ -104,7 +104,7 @@ jobs:
         with:
           tag_major:             ${{ steps.version.outputs.tag_major }}
           tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ steps.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
           draft: 'true'
 ```
 
@@ -117,7 +117,7 @@ jobs:
         with:
           tag_major:             ${{ steps.version.outputs.tag_major }}
           tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ steps.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
           changelog_file: 'docs/CHANGELOG.md'
           git_user_name:  'release-bot'
           git_user_email: 'release-bot@example.com'
@@ -134,7 +134,7 @@ jobs:
     outputs:
       tag_major:             ${{ steps.v.outputs.tag_major }}
       tag_major_minor:       ${{ steps.v.outputs.tag_major_minor }}
-      tag_major_minor_build: ${{ steps.v.outputs.tag_major_minor_build }}
+      tag_major_minor_patch: ${{ steps.v.outputs.tag_major_minor_patch }}
     steps:
       - id: v
         uses: camalot/actions/version/get@v1
@@ -149,7 +149,7 @@ jobs:
         with:
           tag_major:             ${{ needs.version.outputs.tag_major }}
           tag_major_minor:       ${{ needs.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ needs.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ needs.version.outputs.tag_major_minor_patch }}
 ```
 
 ---
@@ -162,7 +162,7 @@ jobs:
         with:
           tag_major:             ${{ steps.version.outputs.tag_major }}
           tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ steps.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
 
       - run: echo "Published to ${{ steps.release.outputs.release_url }}"
 ```

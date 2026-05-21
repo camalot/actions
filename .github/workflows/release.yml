@@ -16,13 +16,13 @@ jobs:
       contents: read
       statuses: write
     outputs:
-      ver_major_minor_build: ${{ steps.get.outputs.major_minor_build }}
+      ver_major_minor_patch: ${{ steps.get.outputs.major_minor_patch }}
       ver_major_minor: ${{ steps.get.outputs.major_minor }}
       ver_major: ${{ steps.get.outputs.major }}
-      tag: ${{ steps.get.outputs.tag_major_minor_build }}
+      tag: ${{ steps.get.outputs.tag_major_minor_patch }}
       tag_major: ${{ steps.get.outputs.tag_major }}
       tag_major_minor: ${{ steps.get.outputs.tag_major_minor }}
-      tag_major_minor_build: ${{ steps.get.outputs.tag_major_minor_build }}
+      tag_major_minor_patch: ${{ steps.get.outputs.tag_major_minor_patch }}
     steps:
       # Required so the composite action under ./.github/actions/version/get is
       # available on disk; the action itself does its own full-history checkout.
@@ -38,14 +38,14 @@ jobs:
       - run: |
           echo "next version: ${TAG}"
         env:
-          TAG: ${{ steps.get.outputs.tag_major_minor_build }}
-          VERSION: ${{ steps.get.outputs.major_minor_build }}
+          TAG: ${{ steps.get.outputs.tag_major_minor_patch }}
+          VERSION: ${{ steps.get.outputs.major_minor_patch}}
           TAG_MAJOR: ${{ steps.get.outputs.tag_major }}
           TAG_MAJOR_MINOR: ${{ steps.get.outputs.tag_major_minor }}
-          TAG_MAJOR_MINOR_BUILD: ${{ steps.get.outputs.tag_major_minor_build }}
+          TAG_MAJOR_MINOR_PATCH: ${{ steps.get.outputs.tag_major_minor_patch }}
           VER_MAJOR: ${{ steps.get.outputs.major }}
           VER_MAJOR_MINOR: ${{ steps.get.outputs.major_minor }}
-          VER_MAJOR_MINOR_BUILD: ${{ steps.get.outputs.major_minor_build }}
+          VER_MAJOR_MINOR_PATCH: ${{ steps.get.outputs.major_minor_patch }}
 
   lint:
     runs-on: ubuntu-latest
@@ -158,7 +158,7 @@ jobs:
         with:
           tag_major: ${{ needs.version.outputs.tag_major }}
           tag_major_minor: ${{ needs.version.outputs.tag_major_minor }}
-          tag_major_minor_build: ${{ needs.version.outputs.tag_major_minor_build }}
+          tag_major_minor_patch: ${{ needs.version.outputs.tag_major_minor_patch }}
           token: ${{ github.token }}
 
 

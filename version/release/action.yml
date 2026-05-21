@@ -13,8 +13,8 @@ inputs:
   tag_major_minor:
     description: 'Major.Minor tag form, e.g. v1.2. Will be created and moved to point at the new commit.'
     required: true
-  tag_major_minor_build:
-    description: 'Full Major.Minor.Build tag form, e.g. v1.2.3. Used as the GitHub Release tag.'
+  tag_major_minor_patch:
+    description: 'Full Major.Minor.Patch tag form, e.g. v1.2.3. Used as the GitHub Release tag.'
     required: true
   changelog_file:
     description: 'Path (relative to repo root) of the changelog file to update.'
@@ -107,7 +107,7 @@ runs:
       id: notes
       shell: bash
       env:
-        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
@@ -141,7 +141,7 @@ runs:
       shell: bash
       env:
         CHANGELOG_FILE: ${{ inputs.changelog_file }}
-        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
@@ -158,7 +158,7 @@ runs:
     - name: Update Version Files
       shell: bash
       env:
-        NEXT_VERSION: ${{ inputs.tag_major_minor_build }}
+        NEXT_VERSION: ${{ inputs.tag_major_minor_patch }}
       run: |
         set -euo pipefail
         echo "::group::Update version files"
@@ -184,7 +184,7 @@ runs:
       shell: bash
       env:
         CHANGELOG_FILE: ${{ inputs.changelog_file }}
-        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
       run: |
         set -euo pipefail
         echo "::group::Commit Changelog updates"
@@ -208,18 +208,18 @@ runs:
       env:
         TAG_MAJOR: ${{ inputs.tag_major }}
         TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
-        TAG_MAJOR_MINOR_BUILD: ${{ inputs.tag_major_minor_build }}
+        TAG_MAJOR_MINOR_PATCH: ${{ inputs.tag_major_minor_patch }}
       run: |
         set -euo pipefail
-        echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_BUILD}"
-        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_BUILD}"; do
+        echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_PATCH}"
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
           # Delete locally and on the remote if it already exists, so the
           # floating tags (vMAJOR, vMAJOR.MINOR) can be moved to the new commit.
           git tag -d "${tag}" 2>/dev/null || true
           git push origin ":refs/tags/${tag}" 2>/dev/null || true
         done
 
-        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_BUILD}"; do
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
           git tag "${tag}"
           git push origin "${tag}"
         done
@@ -230,7 +230,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
-        NEXT_TAG: ${{ inputs.tag_major_minor_build }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
         NOTES_PATH: ${{ steps.notes.outputs.path }}
         PRERELEASE: ${{ inputs.prerelease }}
         DRAFT: ${{ inputs.draft }}
@@ -260,16 +260,17 @@ runs:
       env:
         TAG_MAJOR: ${{ inputs.tag_major }}
         TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
-        TAG_MAJOR_MINOR_BUILD: ${{ inputs.tag_major_minor_build }}
+        TAG_MAJOR_MINOR_PATCH: ${{ inputs.tag_major_minor_patch }}
         CHANGELOG_COMMITTED: ${{ steps.commit.outputs.committed }}
         RELEASE_URL: ${{ steps.gh_release.outputs.url }}
       run: |
         {
           echo "### Release"
           echo ""
-          echo "- Tag (build): \`${TAG_MAJOR_MINOR_BUILD}\`"
-          echo "- Tag (minor): \`${TAG_MAJOR_MINOR}\`"
           echo "- Tag (major): \`${TAG_MAJOR}\`"
+          echo "- Tag (minor): \`${TAG_MAJOR_MINOR}\`"
+          echo "- Tag (patch): \`${TAG_MAJOR_MINOR_PATCH}\`"
+          echo ""
           echo "- Changelog committed: \`${CHANGELOG_COMMITTED:-false}\`"
           echo "- Release: ${RELEASE_URL:-n/a}"
         } >> "${GITHUB_STEP_SUMMARY}"

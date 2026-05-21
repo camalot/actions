@@ -24,18 +24,18 @@ outputs:
   major_minor:
     description: 'Major.Minor of next_version (e.g. 1.2).'
     value: ${{ steps.compute.outputs.major_minor }}
-  major_minor_build:
+  major_minor_patch:
     description: 'Full Major.Minor.Build of next_version (e.g. 1.2.4).'
-    value: ${{ steps.compute.outputs.major_minor_build }}
+    value: ${{ steps.compute.outputs.major_minor_patch}}
   tag_major:
     description: 'Major tag form with "v" prefix (e.g. v1).'
     value: ${{ steps.compute.outputs.tag_major }}
   tag_major_minor:
     description: 'Major.Minor tag form with "v" prefix (e.g. v1.2).'
     value: ${{ steps.compute.outputs.tag_major_minor }}
-  tag_major_minor_build:
+  tag_major_minor_patch:
     description: 'Full tag form with "v" prefix (e.g. v1.2.4).'
-    value: ${{ steps.compute.outputs.tag_major_minor_build }}
+    value: ${{ steps.compute.outputs.tag_major_minor_patch}}
 runs:
   using: "composite"
   steps:
@@ -90,17 +90,17 @@ runs:
 
         MAJOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1)"
         MAJOR_MINOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1-2)"
-        MAJOR_MINOR_BUILD="$(echo "${NEXT_PLAIN}" | cut -d. -f1-3)"
+        MAJOR_MINOR_PATCH="$(echo "${NEXT_PLAIN}" | cut -d. -f1-3)"
 
         {
           echo "current_version=${CURRENT_PLAIN}"
           echo "next_version=${NEXT_PLAIN}"
           echo "major=${MAJOR}"
           echo "major_minor=${MAJOR_MINOR}"
-          echo "major_minor_build=${MAJOR_MINOR_BUILD}"
+          echo "major_minor_patch=${MAJOR_MINOR_PATCH}"
           echo "tag_major=v${MAJOR}"
           echo "tag_major_minor=v${MAJOR_MINOR}"
-          echo "tag_major_minor_build=v${MAJOR_MINOR_BUILD}"
+          echo "tag_major_minor_patch=v${MAJOR_MINOR_PATCH}"
         } >> "${GITHUB_OUTPUT}"
 
     - name: Summary
@@ -110,10 +110,10 @@ runs:
         NV: "${{ steps.compute.outputs.next_version }}"
         TMJ: "${{ steps.compute.outputs.tag_major }}"
         TMJM: "${{ steps.compute.outputs.tag_major_minor }}"
-        TMJMB: "${{ steps.compute.outputs.tag_major_minor_build }}"
+        TMJMP: "${{ steps.compute.outputs.tag_major_minor_patch }}"
         MJ: "${{ steps.compute.outputs.major }}"
         MJM: "${{ steps.compute.outputs.major_minor }}"
-        MJMB: "${{ steps.compute.outputs.major_minor_build }}"
+        MJMP: "${{ steps.compute.outputs.major_minor_patch }}"
       run: |
         {
           echo "### Version Determination"
@@ -124,8 +124,8 @@ runs:
           echo "| next_version | $NV |"
           echo "| major | $MJ |"
           echo "| major_minor | $MJM |"
-          echo "| major_minor_build | $MJMB |"
+          echo "| major_minor_patch | $MJMP |"
           echo "| tag_major | $TMJ |"
           echo "| tag_major_minor | $TMJM |"
-          echo "| tag_major_minor_build | $TMJMB |"
+          echo "| tag_major_minor_patch | $TMJMP |"
         } >> "${GITHUB_STEP_SUMMARY}"
