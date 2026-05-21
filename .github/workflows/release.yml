@@ -142,6 +142,9 @@ jobs:
       contents: write
       packages: write
       statuses: write
+      checks: read
+      issues: read
+      pull-requests: read
     steps:
       # Required so the composite action under ./.github/actions/version/release
       # is available on disk; the action itself does its own full-history
