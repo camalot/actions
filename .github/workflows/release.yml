@@ -173,6 +173,7 @@ jobs:
       - prepare-docs
       - release
       - lint
+      - version
     steps:
       - uses: actions/checkout@v6
         with:

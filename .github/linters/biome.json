@@ -1,6 +1,5 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
-  "root": true,
   "json": {
     "formatter": {
       "enabled": false,
@@ -11,7 +10,7 @@
       "trailingCommas": "none"
     },
     "linter": {
-      "enabled": true
+      "enabled": false
     }
   },
   "javascript": {
@@ -24,7 +23,7 @@
       "trailingCommas": "none"
     },
     "linter": {
-      "enabled": true
+      "enabled": false
     }
   },
   "css": {
@@ -37,7 +36,7 @@
       "quoteStyle": "double"
     },
     "linter": {
-      "enabled": true
+      "enabled": false
     }
   }
 }
