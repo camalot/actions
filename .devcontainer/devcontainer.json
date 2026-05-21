@@ -100,7 +100,7 @@
     }
   },
   "postCreateCommand": "[ -f .devcontainer/container-setup.sh ] && chmod +x .devcontainer/container-setup.sh && .devcontainer/container-setup.sh",
-  "postAttachCommand": "cp /home/vscode/.claude/.credentials.json /home/vscode/.claude-persist/.credentials.json 2>/dev/null; cp /home/vscode/.claude.json /home/vscode/.claude-persist/.claude.json 2>/dev/null; true",
+  // "postAttachCommand": "cp /home/vscode/.claude/.credentials.json /home/vscode/.claude-persist/.credentials.json 2>/dev/null; cp /home/vscode/.claude.json /home/vscode/.claude-persist/.claude.json 2>/dev/null; true",
   "remoteUser": "vscode",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
