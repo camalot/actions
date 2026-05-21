@@ -40,8 +40,8 @@ runs:
       with:
         input_dir: ${{ inputs.input_dir }}
         output_dir: ${{ inputs.output_dir }}
-        url: ${{ steps.pages.outputs.base_url }}
-        baseurl: ""
+        url: ${{ steps.pages.outputs.origin }}
+        baseurl: "${{ steps.pages.outputs.base_path }}"
 
     - name: Upload artifact
       if: "${{ !env.ACT }}"
