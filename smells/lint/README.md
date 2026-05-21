@@ -37,7 +37,7 @@ permissions:
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `default_branch` | `develop` | Branch to compare changed files against when `validate_all_codebase` is `false`. |
+| `default_branch` | `main` | Branch to compare changed files against when `validate_all_codebase` is `false`. |
 | `delete_previous_comment` | `true` | When `true`, deletes the previous Super-Linter summary comment on a PR before running, avoiding stale comments. |
 | `super_linter_env_file` | _(none)_ | Path to a `.env` file whose variables are loaded into Super-Linter's environment before it runs. |
 | `filter_regex_exclude` | `(\.devcontainer\|\.github/linters\|docs\|\.vscode)/\|.*/output/\|CHANGELOG\.md)` | Regex pattern of files and directories to exclude from linting. |

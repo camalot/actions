@@ -8,7 +8,7 @@ inputs:
   default_branch:
     description: "Default branch to compare against for linting (default: develop)"
     required: false
-    default: "develop"
+    default: "main"
   delete_previous_comment:
     description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true)"
     required: false

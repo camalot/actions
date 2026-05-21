@@ -5,6 +5,7 @@
 .env
 .env.*
 *.env
+!.github/linters/super-linter.env
 
 .secrets/
 .secrets.*/
