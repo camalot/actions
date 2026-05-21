@@ -1,0 +1,1 @@
+../../smells/test/README.md

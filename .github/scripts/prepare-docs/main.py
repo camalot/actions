@@ -2,8 +2,10 @@
 """Generate Jekyll documentation pages and _includes symlinks from action.yml files.
 
 Actions without a README.md alongside their action.yml are skipped entirely.
-Category folders that contain sub-folder actions are rendered via index.md.j2;
-if the category folder itself has a README.md it is symlinked and included.
+Each directory level between the repo root and an action is rendered as an
+index.md via index.md.j2; if that directory has a README.md it is symlinked
+and included.  This produces a fully nested Just-the-Docs navigation tree,
+e.g. smells/test/python/pytest → Smells > Test > Python > PyTest.
 """
 
 import os
@@ -59,19 +61,6 @@ def find_actions() -> list[Path]:
     return actions
 
 
-def action_parts(action_path: Path) -> tuple[str, str, str]:
-    """Return (category, sub_slug, full_slug).
-
-    helm/build-publish/action.yml -> ("helm", "build-publish", "helm-build-publish")
-    version/release/action.yml    -> ("version", "release",    "version-release")
-    """
-    rel_parts = action_path.relative_to(REPO_ROOT).parts[:-1]
-    category = rel_parts[0]
-    sub_slug = "-".join(rel_parts[1:]) if len(rel_parts) > 1 else rel_parts[0]
-    full_slug = "-".join(rel_parts)
-    return category, sub_slug, full_slug
-
-
 # ---------------------------------------------------------------------------
 # Front-matter helpers
 # ---------------------------------------------------------------------------
@@ -88,33 +77,6 @@ def read_nav_order(path: Path) -> int | None:
     fm = parse_front_matter(path)
     v = fm.get("nav_order")
     return int(v) if v is not None else None
-
-
-def get_category_title(cat_dir: Path) -> str:
-    fm = parse_front_matter(cat_dir / "index.md")
-    return fm.get("title", "")
-
-
-def get_existing_page_nav_orders(cat_dir: Path) -> dict[str, int]:
-    """Return {stem: nav_order} for every non-index page in cat_dir."""
-    orders: dict[str, int] = {}
-    for md in cat_dir.glob("*.md"):
-        if md.name == "index.md":
-            continue
-        v = read_nav_order(md)
-        if v is not None:
-            orders[md.stem] = v
-    return orders
-
-
-def get_existing_index_nav_orders() -> dict[str, int]:
-    """Return {category: nav_order} from existing category index.md files."""
-    orders: dict[str, int] = {}
-    for index in DOCS_DIR.glob("*/index.md"):
-        v = read_nav_order(index)
-        if v is not None:
-            orders[index.parent.name] = v
-    return orders
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +127,47 @@ def maybe_create_readme_symlink(readme: Path, symlink_name: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Existing nav_order loading
+# ---------------------------------------------------------------------------
+
+def load_existing_nav_orders() -> tuple[
+    dict[tuple, int],
+    defaultdict[tuple, dict[str, int]],
+]:
+    """Scan the existing _docs tree and return preserved nav_order values.
+
+    Returns:
+        index_nav_orders  – {dir_parts_tuple: nav_order} for every index.md
+        page_nav_orders   – {parent_dir_tuple: {slug: nav_order}} for every
+                            non-index page
+    """
+    index_nav_orders: dict[tuple, int] = {}
+    page_nav_orders: defaultdict[tuple, dict[str, int]] = defaultdict(dict)
+
+    for index_md in sorted(DOCS_DIR.rglob("index.md")):
+        try:
+            rel_parts = index_md.parent.relative_to(DOCS_DIR).parts
+        except ValueError:
+            continue
+        v = read_nav_order(index_md)
+        if v is not None:
+            index_nav_orders[rel_parts] = v
+
+    for md in sorted(DOCS_DIR.rglob("*.md")):
+        if md.name == "index.md":
+            continue
+        try:
+            parent_parts = md.parent.relative_to(DOCS_DIR).parts
+        except ValueError:
+            continue
+        v = read_nav_order(md)
+        if v is not None:
+            page_nav_orders[parent_parts][md.stem] = v
+
+    return index_nav_orders, page_nav_orders
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -183,82 +186,138 @@ def main() -> None:
     generated: list[str] = []
     skipped: list[tuple[str, str]] = []
 
-    # Partition actions: only process those with a README.md.
-    by_category: dict[str, list[Path]] = defaultdict(list)
+    # -----------------------------------------------------------------------
+    # Step 1 – collect valid actions (README.md must exist beside action.yml)
+    # -----------------------------------------------------------------------
+    valid_actions: list[Path] = []
     for action_path in find_actions():
         rel = str(action_path.relative_to(REPO_ROOT))
         if not (action_path.parent / "README.md").exists():
             skipped.append((rel, "no README.md"))
             continue
-        cat, _, _ = action_parts(action_path)
-        by_category[cat].append(action_path)
+        valid_actions.append(action_path)
 
-    # Track category index nav_orders (preserved across regeneration).
-    index_nav_orders = get_existing_index_nav_orders()
+    # -----------------------------------------------------------------------
+    # Step 2 – collect every unique ancestor directory that needs an index.md
+    #
+    # For smells/test/python/pytest/action.yml the ancestors are:
+    #   ('smells',), ('smells','test'), ('smells','test','python')
+    # -----------------------------------------------------------------------
+    dirs_needing_index: set[tuple] = set()
+    for action_path in valid_actions:
+        parts = action_path.relative_to(REPO_ROOT).parts[:-1]
+        for depth in range(1, len(parts)):
+            dirs_needing_index.add(parts[:depth])
 
-    for category, paths in sorted(by_category.items()):
-        cat_dir = DOCS_DIR / category
-        cat_dir.mkdir(parents=True, exist_ok=True)
+    # -----------------------------------------------------------------------
+    # Step 3 – load existing nav_orders so we can preserve them
+    # -----------------------------------------------------------------------
+    index_nav_orders, page_nav_orders = load_existing_nav_orders()
 
-        index_name = display_name(category, words)
+    # -----------------------------------------------------------------------
+    # Step 4 – generate index pages (shallowest first so parent titles are
+    # known when processing children)
+    # -----------------------------------------------------------------------
+    index_titles: dict[tuple, str] = {}  # dir_tuple → rendered title
 
-        # Category folder README symlink (e.g. helm/README.md → _includes/helm.md).
-        cat_readme = REPO_ROOT / category / "README.md"
-        readme_symlink = maybe_create_readme_symlink(cat_readme, f"{category}.md")
+    for dir_tuple in sorted(dirs_needing_index, key=len):
+        slug = dir_tuple[-1]
+        folder_name = display_name(slug, words)
+        depth = len(dir_tuple)
+        src_dir = REPO_ROOT / Path(*dir_tuple)
+        docs_dir_path = DOCS_DIR / Path(*dir_tuple)
+        docs_dir_path.mkdir(parents=True, exist_ok=True)
 
-        # Preserve or assign category index nav_order.
-        if category not in index_nav_orders:
-            index_nav_orders[category] = next_nav_order(index_nav_orders)
+        parent_title = index_titles.get(dir_tuple[:-1]) if depth > 1 else None
+        grand_parent_title = index_titles.get(dir_tuple[:-2]) if depth > 2 else None
 
-        index_content = index_template.render(
-            index_name=index_name,
-            nav_order=index_nav_orders[category],
-            parent=None,
+        readme_symlink = maybe_create_readme_symlink(
+            src_dir / "README.md",
+            f"{'-'.join(dir_tuple)}.md",
+        )
+
+        # Preserve existing nav_order or assign the next available one.
+        if dir_tuple not in index_nav_orders:
+            parent_key = dir_tuple[:-1]
+            sibling_indices = {
+                k[-1]: v
+                for k, v in index_nav_orders.items()
+                if len(k) == depth and k[:-1] == parent_key
+            }
+            sibling_pages = dict(page_nav_orders.get(parent_key, {}))
+            index_nav_orders[dir_tuple] = next_nav_order(
+                {**sibling_indices, **sibling_pages}
+            )
+
+        index_titles[dir_tuple] = folder_name
+
+        index_path = docs_dir_path / "index.md"
+        content = index_template.render(
+            index_name=folder_name,
+            nav_order=index_nav_orders[dir_tuple],
+            parent=parent_title,
+            grand_parent=grand_parent_title,
             readme_symlink=readme_symlink,
         )
-        index_path = cat_dir / "index.md"
-        index_path.write_text(index_content, encoding="utf-8")
+        index_path.write_text(content, encoding="utf-8")
         generated.append(str(index_path.relative_to(REPO_ROOT)))
 
-        # Snapshot existing action page nav_orders for this category.
-        existing = get_existing_page_nav_orders(cat_dir)
-        parent_title = get_category_title(cat_dir)
+    # -----------------------------------------------------------------------
+    # Step 5 – generate action doc pages
+    # -----------------------------------------------------------------------
+    for action_path in sorted(valid_actions):
+        parts = action_path.relative_to(REPO_ROOT).parts[:-1]
+        leaf_slug = parts[-1]
+        parent_parts = parts[:-1]
+        depth = len(parts)
 
-        for action_path in sorted(paths):
-            _, sub_slug, full_slug = action_parts(action_path)
+        docs_parent_dir = DOCS_DIR / Path(*parent_parts)
+        docs_parent_dir.mkdir(parents=True, exist_ok=True)
 
-            with action_path.open(encoding="utf-8") as fh:
-                action_data = yaml.safe_load(fh)
+        with action_path.open(encoding="utf-8") as fh:
+            action_data = yaml.safe_load(fh)
 
-            action_name = action_data.get("name") or display_name(sub_slug, words)
-            description = (action_data.get("description") or "").strip()
+        action_name = action_data.get("name") or display_name(leaf_slug, words)
+        description = (action_data.get("description") or "").strip()
 
-            # Action README symlink (always exists at this point — skipped otherwise).
-            action_readme_symlink = maybe_create_readme_symlink(
-                action_path.parent / "README.md",
-                f"{full_slug}.md",
+        full_slug = "-".join(parts)
+        action_readme_symlink = maybe_create_readme_symlink(
+            action_path.parent / "README.md",
+            f"{full_slug}.md",
+        )
+
+        parent_title = index_titles.get(parent_parts)
+        grand_parent_title = (
+            index_titles.get(parent_parts[:-1]) if len(parent_parts) > 1 else None
+        )
+
+        # Preserve existing nav_order or assign the next available one.
+        if leaf_slug not in page_nav_orders[parent_parts]:
+            sibling_indices = {
+                k[-1]: v
+                for k, v in index_nav_orders.items()
+                if len(k) == depth and k[:-1] == parent_parts
+            }
+            sibling_pages = dict(page_nav_orders.get(parent_parts, {}))
+            page_nav_orders[parent_parts][leaf_slug] = next_nav_order(
+                {**sibling_indices, **sibling_pages}
             )
 
-            # Preserve existing nav_order; assign a new one otherwise.
-            doc_path = cat_dir / f"{sub_slug}.md"
-            if sub_slug in existing:
-                nav_order = existing[sub_slug]
-            else:
-                nav_order = next_nav_order(existing)
-                existing[sub_slug] = nav_order
+        nav_order = page_nav_orders[parent_parts][leaf_slug]
 
-            content = action_template.render(
-                action_name=action_name,
-                nav_order=nav_order,
-                parent=parent_title,
-                description=description,
-                action_readme_symlink=action_readme_symlink,
-            )
-            doc_path.write_text(content, encoding="utf-8")
-            generated.append(str(doc_path.relative_to(REPO_ROOT)))
+        doc_path = docs_parent_dir / f"{leaf_slug}.md"
+        content = action_template.render(
+            action_name=action_name,
+            nav_order=nav_order,
+            parent=parent_title,
+            grand_parent=grand_parent_title,
+            description=description,
+            action_readme_symlink=action_readme_symlink,
+        )
+        doc_path.write_text(content, encoding="utf-8")
+        generated.append(str(doc_path.relative_to(REPO_ROOT)))
 
     # Summary
-    width = 60
     print("# Documentation Generation Summary")
     print('\n---\n')
 
