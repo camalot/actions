@@ -10,4 +10,6 @@ rules:
     disable: true
   ref-confusion:
     disable: true
-
+  artipacked:
+    ignore:
+      - release.yml
