@@ -4,6 +4,7 @@ nav_order: 1
 parent: Smells
 description: Run linters to ensure code quality and consistency across the codebase.
 layout: default
+has_toc: false
 ---
 
 <!-- markdownlint-disable MD022 MD025 -->
