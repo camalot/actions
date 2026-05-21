@@ -47,7 +47,7 @@ body = """
   {% if remote.github.owner and remote.github.repo -%}
     https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
   {%- else -%}
-    https://github.com/iman-srecore/aqueduct
+    https://github.com/camalot/actions
   {%- endif -%}
 {%- endmacro -%}
 """
@@ -58,7 +58,7 @@ render_always = true
 # An array of regex based postprocessors to modify the changelog.
 postprocessors = [
     # Replace the placeholder <REPO> with a URL.
-    { pattern = '<REPO>', replace = "https://github.com/iman-srecore/aqueduct" },
+    { pattern = '<REPO>', replace = "https://github.com/camalot/actions" },
 ]
 # render body even when there are no releases to process
 # render_always = true
@@ -127,7 +127,7 @@ filter_commits = false
 fail_on_unmatched_commit = false
 # An array of link parsers for extracting external references, and turning them into URLs, using regex.
 link_parsers = [
-  { pattern = "(SRE|NT|CIAS|CI|SREW|APSEC|TACO|CIMD)-(\\d+)", href = "https://imanage-jira.atlassian.net/browse/$1-$2"},
+  # { pattern = "(ABC)-(\\d+)", href = "https://foo-jira.atlassian.net/browse/$1-$2"},
 ]
 # Include only the tags that belong to the current branch.
 use_branch_tags = false
