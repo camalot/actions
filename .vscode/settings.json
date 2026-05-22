@@ -19,5 +19,8 @@
   "python.terminal.useEnvFile": true,
   "json.schemaDownload.trustedDomains": {
     "https://biomejs.dev/schemas/2.3.11/schema.json": true
+  },
+  "files.associations": {
+    ".codespellrc": "ini"
   }
 }
