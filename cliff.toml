@@ -47,7 +47,7 @@ body = """
   {% if remote.github.owner and remote.github.repo -%}
     https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}
   {%- else -%}
-    https://github.com/camalot/actions
+    <REPO>
   {%- endif -%}
 {%- endmacro -%}
 """
@@ -57,8 +57,10 @@ trim = true
 render_always = true
 # An array of regex based postprocessors to modify the changelog.
 postprocessors = [
-    # Replace the placeholder <REPO> with a URL.
-    { pattern = '<REPO>', replace = "https://github.com/camalot/actions" },
+  # Replace the placeholder <REPO> with a URL.
+  { pattern = '<REPO>', replace = "https://github.com/camalot/actions" },
+  { pattern = '<REPO_NAME>', replace = "actions" },
+  { pattern = '<REPO_OWNER>', replace = "camalot" },
 ]
 # render body even when there are no releases to process
 # render_always = true
@@ -81,21 +83,23 @@ filter_unconventional = true
 require_conventional = false
 # Split commits on newlines, treating each line as an individual commit.
 # Disabled: causes squash-merged PR bodies to fragment into separate changelog entries.
-split_commits = false
+split_commits = true
 # An array of regex based parsers to modify commit messages prior to further processing.
 commit_preprocessors = [
-    # Strip the body from GitHub PR squash-merge summary commits (e.g. "v1.3.0 (#136)\n...").
-    # When split_commits = true, the body lines would otherwise be treated as separate commits,
-    # which causes duplicate or misattributed changelog entries across release branches.
-    { pattern = '(?s)^v\d+\.\d+\.\d+\s+\(#\d+\)\n.*', replace = "chore(release): pr squash merge summary" },
-    # Remove leading asterisks from GitHub PR squash commits (e.g. "* feat: ..." → "feat: ...").
-    # Allows multi-line bodies to be preserved without fragmenting into separate entries.
-    { pattern = '^(\* )', replace = "" },
-    # Replace issue numbers with link templates to be updated in `changelog.postprocessors`.
-    { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
-    # Check spelling of the commit message using https://github.com/crate-ci/typos.
-    # If the spelling is incorrect, it will be fixed automatically.
-    #{ pattern = '.*', replace_command = 'typos --write-changes -' },
+  # Strip the body from GitHub PR squash-merge summary commits (e.g. "v1.3.0 (#136)\n...").
+  # When split_commits = true, the body lines would otherwise be treated as separate commits,
+  # which causes duplicate or misattributed changelog entries across release branches.
+  # { pattern = '(?s)^v\d+\.\d+\.\d+\s+\(#\d+\)\n.*', replace = "chore(release): pr squash merge summary" },
+  # Remove leading asterisks from GitHub PR squash commits (e.g. "* feat: ..." → "feat: ...").
+  # Allows multi-line bodies to be preserved without fragmenting into separate entries.
+  { pattern = '^(\n\* )', replace = "\n" }, # Remove leading asterisks from GitHub PR squash commits (e.g. "* feat: ..." → "feat: ...").
+    # Remove leading newlines from commit messages.
+  # Replace issue numbers with link templates to be updated in `changelog.postprocessors`.
+  { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
+  # { pattern = '(ABZ|DEY)-(\\d+)', replace = "[$1-$2](https://my-jira.atlassian.net/browse/$1-$2)"},
+  # Check spelling of the commit message using https://github.com/crate-ci/typos.
+  # If the spelling is incorrect, it will be fixed automatically.
+  #{ pattern = '.*', replace_command = 'typos --write-changes -' },
 ]
 # Prevent commits that are breaking from being excluded by commit parsers.
 protect_breaking_commits = false
@@ -109,7 +113,7 @@ commit_parsers = [
     { message = "^perf", group = "<!-- 4 -->⚡ Performance" },
     { message = "^ref(actor)?", group = "<!-- 2 -->🚜 Refactor" },
     { message = "^style", group = "<!-- 5 -->🎨 Styling" },
-    { message = "^test", group = "<!-- 6 -->🧪 Testing" },
+    { message = "^tests?", group = "<!-- 6 -->🧪 Testing" },
     { message = "^chore\\(release\\):", skip = true },
     { message = "^chore\\(deps.*\\)", skip = true },
     { message = "^chore\\(pr\\)", skip = true },
@@ -119,15 +123,17 @@ commit_parsers = [
     { message = "^chore|^ci", group = "<!-- 7 -->⚙️ Miscellaneous Tasks" },
     { body = ".*security", group = "<!-- 8 -->🛡️ Security" },
     { message = "^revert", group = "<!-- 9 -->◀️ Revert" },
-    { message = ".*", group = "<!-- 10 -->💼 Other" },
+    { message = ".*", skip = true }, # Skip all other commits that don't match any of the above parsers.
+    # { message = ".*", group = "<!-- 10 -->💼 Other" },
 ]
 # Exclude commits that are not matched by any commit parser.
 filter_commits = false
+filter_merge_commits = true
 # Fail on a commit that is not matched by any commit parser.
 fail_on_unmatched_commit = false
 # An array of link parsers for extracting external references, and turning them into URLs, using regex.
 link_parsers = [
-  # { pattern = "(ABC)-(\\d+)", href = "https://foo-jira.atlassian.net/browse/$1-$2"},
+  # { pattern = "(ABZ|DEY)-(\\d+)", href = "https://my-jira.atlassian.net/browse/$1-$2"},
 ]
 # Include only the tags that belong to the current branch.
 use_branch_tags = false

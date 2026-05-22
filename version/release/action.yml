@@ -39,7 +39,7 @@ inputs:
   git_user_email:
     description: 'Author email for the changelog commit.'
     required: false
-    default: 'github-actions[bot]@users.noreply.github.com'
+    default: '41898282+github-actions[bot]@users.noreply.github.com'
   chart_version_file:
     description: 'Path to a Chart.yaml file whose version field should be updated to match the new version.'
     required: false
@@ -58,13 +58,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        # Keep the GITHUB_TOKEN attached so `git push` for the changelog
-        # commit and tags is authenticated.
-        persist-credentials: true
-
     - name: Check for .nvmrc
       id: nvmrc_check
       shell: bash
@@ -159,6 +152,8 @@ runs:
       shell: bash
       env:
         NEXT_VERSION: ${{ inputs.tag_major_minor_patch }}
+        CHART_VERSION_FILE: ${{ inputs.chart_version_file }}
+        JEKYLL_CONFIG_FILE: ${{ inputs.jekyll_config_file }}
       run: |
         set -euo pipefail
         echo "::group::Update version files"
@@ -167,15 +162,15 @@ runs:
           git add .version
         fi
 
-        if [[ -f "${{ inputs.chart_version_file }}" ]]; then
-          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${{ inputs.chart_version_file }}"
-          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${{ inputs.chart_version_file }}"
-          git add "${{ inputs.chart_version_file }}"
+        if [[ -f "${CHART_VERSION_FILE}" ]]; then
+          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${CHART_VERSION_FILE}"
+          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${CHART_VERSION_FILE}"
+          git add "${CHART_VERSION_FILE}"
         fi
 
-        if [[ -f "${{ inputs.jekyll_config_file }}" ]]; then
-          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${{ inputs.jekyll_config_file }}"
-          git add "${{ inputs.jekyll_config_file }}"
+        if [[ -f "${JEKYLL_CONFIG_FILE}" ]]; then
+          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${JEKYLL_CONFIG_FILE}"
+          git add "${JEKYLL_CONFIG_FILE}"
         fi
         echo "::endgroup::"
 
