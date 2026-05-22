@@ -81,36 +81,66 @@ runs:
       run: |
         set -euo pipefail
 
+        # Normalize default: accept with or without leading 'v'.
+        DEFAULT_WITH_V="v${DEFAULT_VERSION#v}"
+        DEFAULT_PLAIN="${DEFAULT_VERSION#v}"
+
         # Match only fully-qualified vMAJOR.MINOR.PATCH tags so that floating
         # tags (v1, v1.1) at the same commit are never returned as CURRENT_VERSION.
         # Without this, git describe may return v1 or v1.1 and git-cliff then
         # computes a wrong base, silently falling back to the default.
-        CURRENT_VERSION="$(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0 2>/dev/null || echo "${DEFAULT_VERSION}")"
+        CURRENT_VERSION="$(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0 2>/dev/null)"
+        HAS_TAGS="false"
+        if [[ -n "${CURRENT_VERSION}" ]]; then
+          HAS_TAGS="true"
+        else
+          CURRENT_VERSION="${DEFAULT_WITH_V}"
+        fi
+        CURRENT_PLAIN="${CURRENT_VERSION#v}"
 
         # Scope git-cliff to exactly CURRENT_VERSION..HEAD so it is unaffected
         # by floating tags that may sit at the same commit as CURRENT_VERSION.
         # --offline prevents any GitHub/GitLab API calls.
-        NEXT_VERSION="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
+        # Normalize the output: git-cliff may return the version with or without
+        # the leading 'v' depending on its config; always canonicalize to 'v' form.
+        NEXT_RAW="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
+        NEXT_VERSION="v${NEXT_RAW#v}"
 
-        # Fall back to the default when git-cliff returns nothing (empty range,
-        # no conventional commits, or other non-fatal failure).
-        if [[ -z "${NEXT_VERSION}" ]]; then
-          NEXT_VERSION="${DEFAULT_VERSION}"
-        fi
-
-        # Guard: fail when the next version equals the default AND that tag
-        # already exists — this almost always means detection broke rather than
-        # a genuine first-release scenario.
-        if [[ "${FAIL_ON_DEFAULT}" == "true" && "${NEXT_VERSION}" == "${DEFAULT_VERSION}" ]]; then
-          if git tag --list | grep -qx "${DEFAULT_VERSION}"; then
-            echo "::error::Computed next version is the default (${DEFAULT_VERSION}), but that tag already exists. Verify that fetch-depth: 0 is set and commits follow Conventional Commits format."
-            exit 1
+        # When git-cliff returns nothing (no bump-triggering commits in the range,
+        # empty range, or other non-fatal failure), fall back gracefully:
+        #   - Real tags exist → patch-bump CURRENT_VERSION (returning a version
+        #     lower than current would be wrong, and the default is unrelated).
+        #   - No tags at all  → use DEFAULT_VERSION (genuine first-release case).
+        if [[ "${NEXT_VERSION}" == "v" ]]; then
+          if [[ "${HAS_TAGS}" == "true" ]]; then
+            MAJOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f1)"
+            MINOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f2)"
+            PATCH_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f3)"
+            NEXT_VERSION="v${MAJOR_C}.${MINOR_C}.$((PATCH_C + 1))"
+          else
+            NEXT_VERSION="${DEFAULT_WITH_V}"
           fi
         fi
 
-        # Normalize: strip any leading 'v' for the plain forms.
-        CURRENT_PLAIN="${CURRENT_VERSION#v}"
         NEXT_PLAIN="${NEXT_VERSION#v}"
+
+        # Guard: fail when the computed next version equals the default and we are
+        # not in a genuine first-release scenario. Both sides are compared without
+        # the leading 'v' so "v1.0.0" and "1.0.0" are treated as identical.
+        if [[ "${FAIL_ON_DEFAULT}" == "true" && "${NEXT_PLAIN}" == "${DEFAULT_PLAIN}" ]]; then
+          if [[ "${HAS_TAGS}" == "true" ]]; then
+            # Real version history exists but we still computed the default —
+            # this means version detection broke (e.g. no conventional commits).
+            echo "::error::Computed next version is the default (${DEFAULT_WITH_V}), but the repository already has tags beyond it (current: ${CURRENT_VERSION}). Check that commits follow Conventional Commits format."
+            exit 1
+          fi
+          # Genuine first-release scenario: still fail if the default tag already
+          # exists — it would be a duplicate tag.
+          if git tag --list | grep -qFx "${DEFAULT_WITH_V}"; then
+            echo "::error::Computed next version is the default (${DEFAULT_WITH_V}), but that tag already exists. Check that fetch-depth: 0 is set and commits follow Conventional Commits format."
+            exit 1
+          fi
+        fi
 
         MAJOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1)"
         MAJOR_MINOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1-2)"
