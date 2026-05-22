@@ -7,8 +7,8 @@ Calculates the next semantic version using [git-cliff](https://git-cliff.org/) b
 1. Fetches the full git history (no shallow clone)
 2. Sets up Node.js using the version in `.nvmrc` if present, otherwise defaults to the latest Node.js release
 3. Installs `git-cliff` globally
-4. Determines the most recent `v*` tag as the **current version**
-5. Runs `git-cliff --bumped-version` against unreleased commits to derive the **next version**
+4. Determines the most recent fully-qualified `vMAJOR.MINOR.PATCH` tag as the **current version** — floating tags such as `v1` or `v1.2` are intentionally excluded to prevent an incomplete version from being used as the `git-cliff` base
+5. Runs `git-cliff --bumped-version` scoped to `CURRENT_VERSION..HEAD` to derive the **next version** — using an explicit commit range rather than `--unreleased` ensures git-cliff is unaffected by any floating tags sitting at the same commit as the current version
 6. Writes all version components to `$GITHUB_OUTPUT` and appends a summary table to `$GITHUB_STEP_SUMMARY`
 
 If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the `default_version` input is used as a fallback.
@@ -24,12 +24,13 @@ If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the
 | Input | Required | Default | Description |
 | --- | --- | --- | --- |
 | `default_version` | No | `v0.1.0` | Fallback version (with leading `v`) used when no prior tags exist or when `git-cliff` cannot determine a bumped version. |
+| `fail_on_default` | No | `false` | When `true`, fails the action if the computed next version equals `default_version` **and** that tag already exists. This guards against silently re-using a stale default when version detection breaks (e.g. shallow clone, no conventional commits). A genuine first release — where the default tag does not yet exist — still succeeds. |
 
 ## Outputs
 
 | Output | Example | Description |
 | --- | --- | --- |
-| `current_version` | `1.2.3` | The most recent `v*` tag in the repo, without the leading `v`. |
+| `current_version` | `1.2.3` | The most recent fully-qualified `vMAJOR.MINOR.PATCH` tag in the repo, without the leading `v`. |
 | `next_version` | `1.2.4` | The next version determined by `git-cliff`, without the leading `v`. |
 | `major` | `1` | Major component of `next_version`. |
 | `major_minor` | `1.2` | Major.Minor of `next_version`. |
@@ -51,6 +52,30 @@ jobs:
         uses: camalot/actions/version/get@v1
 
       - run: echo "Next version is ${{ steps.version.outputs.next_version }}"
+```
+
+---
+
+### Fail when version detection falls back to the default
+
+Useful in release pipelines where silently producing `v1.0.0` would be worse than a visible failure.
+
+```yaml
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        uses: camalot/actions/version/get@v1
+        with:
+          default_version: 'v1.0.0'
+          fail_on_default: 'true'
+
+      - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
 ```
 
 ---
