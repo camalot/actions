@@ -19,6 +19,21 @@ inputs:
       no conventional commits) rather than silently re-tagging with the default.
     required: false
     default: 'false'
+  ENABLE_PR_COMMENT:
+    description: >
+      When 'true', post (or update) a pull-request comment containing the
+      version summary table. The comment is identified by an HTML marker so
+      it is replaced rather than duplicated on re-runs. Has no effect on
+      non-pull-request events. Can also be enabled by setting the
+      ENABLE_PR_COMMENT environment variable to 'true' at the job or workflow level.
+    required: false
+    default: 'false'
+  token:
+    description: >
+      GitHub token used to post or update the PR comment.
+      Only required when enable_pr_comment is 'true'.
+    required: false
+    default: '${{ github.token }}'
 outputs:
   current_version:
     description: 'The most recent v* tag found in the repo, without leading "v" (e.g. 1.2.3).'
@@ -183,3 +198,51 @@ runs:
           echo "| tag_major_minor | $TMJM |"
           echo "| tag_major_minor_patch | $TMJMP |"
         } >> "${GITHUB_STEP_SUMMARY}"
+
+    - name: Write PR comment body
+      if: github.event_name == 'pull_request' && (inputs.enable_pr_comment == 'true' || env.ENABLE_PR_COMMENT == 'true')
+      shell: bash
+      env:
+        CV: "${{ steps.compute.outputs.current_version }}"
+        NV: "${{ steps.compute.outputs.next_version }}"
+        TMJ: "${{ steps.compute.outputs.tag_major }}"
+        TMJM: "${{ steps.compute.outputs.tag_major_minor }}"
+        TMJMP: "${{ steps.compute.outputs.tag_major_minor_patch }}"
+        MJ: "${{ steps.compute.outputs.major }}"
+        MJM: "${{ steps.compute.outputs.major_minor }}"
+        MJMP: "${{ steps.compute.outputs.major_minor_patch }}"
+      run: |
+        {
+          echo "<!-- version-get-report -->"
+          echo "### Version Determination"
+          echo ""
+          echo "| Field | Value |"
+          echo "| --- | --- |"
+          echo "| current_version | $CV |"
+          echo "| next_version | $NV |"
+          echo "| major | $MJ |"
+          echo "| major_minor | $MJM |"
+          echo "| major_minor_patch | $MJMP |"
+          echo "| tag_major | $TMJ |"
+          echo "| tag_major_minor | $TMJM |"
+          echo "| tag_major_minor_patch | $TMJMP |"
+        } > /tmp/version-get-comment.md
+
+    - name: Find existing Version comment
+      if: github.event_name == 'pull_request' && (inputs.enable_pr_comment == 'true' || env.ENABLE_PR_COMMENT == 'true')
+      uses: peter-evans/find-comment@v4
+      id: find_comment
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: "<!-- version-get-report -->"
+        token: ${{ inputs.token }}
+
+    - name: Post or Update PR comment
+      if: github.event_name == 'pull_request' && (inputs.enable_pr_comment == 'true' || env.ENABLE_PR_COMMENT == 'true')
+      uses: peter-evans/create-or-update-comment@v5
+      with:
+        comment-id: ${{ steps.find_comment.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: /tmp/version-get-comment.md
+        edit-mode: replace
+        token: ${{ inputs.token }}
