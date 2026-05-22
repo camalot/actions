@@ -154,6 +154,7 @@ runs:
         NEXT_VERSION: ${{ inputs.tag_major_minor_patch }}
         CHART_VERSION_FILE: ${{ inputs.chart_version_file }}
         JEKYLL_CONFIG_FILE: ${{ inputs.jekyll_config_file }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
         echo "::group::Update version files"
@@ -180,6 +181,7 @@ runs:
       env:
         CHANGELOG_FILE: ${{ inputs.changelog_file }}
         NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
         echo "::group::Commit Changelog updates"
@@ -204,6 +206,7 @@ runs:
         TAG_MAJOR: ${{ inputs.tag_major }}
         TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
         TAG_MAJOR_MINOR_PATCH: ${{ inputs.tag_major_minor_patch }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
         echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_PATCH}"
