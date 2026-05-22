@@ -17,11 +17,6 @@ inputs:
     required: false
     default: "reports/coverage/junit.xml"
 
-  pytest-json-file:
-    description: "Path to the JSON report file"
-    required: false
-    default: "reports/coverage/.report.json"
-
 runs:
   using: "composite"
   steps:
@@ -29,10 +24,6 @@ runs:
       shell: bash
       run: |
         echo "DISTRIB_RELEASE=22.04" | sudo tee -a /etc/lsb-release
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        persist-credentials: false
 
     # set up Python (if needed)
     - name: Set up Python
@@ -59,18 +50,16 @@ runs:
         mkdir -p reports/test
         .venv/bin/python -m pytest \
           --cov --cov-report="lcov:$TEST_LCOV_FILE" --cov-report=term-missing \
-          --junit-xml="$TEST_JUNIT_FILE" \
-          --json-report --json-report-file="$TEST_PYTEST_JSON_FILE"
+          --junit-xml="$TEST_JUNIT_FILE"
         echo "::endgroup::"
       env:
         TEST_LCOV_FILE: ${{ inputs.lcov-file }}
         TEST_JUNIT_FILE: ${{ inputs.junit-file }}
-        TEST_PYTEST_JSON_FILE: ${{ inputs.pytest-json-file }}
 
     - name: Generate Test & Coverage Reports
-      uses: camalot/actions/smells/test/coverage@v1
+      # uses: iman-srecore/actions/smells/test/coverage@v1
+      uses: iman-srecore/actions/smells/test/coverage@v1
       with:
         token: ${{ inputs.token }}
         lcov-file: ${{ inputs.lcov-file }}
         junit-file: ${{ inputs.junit-file }}
-        pytest-json-file: ${{ inputs.pytest-json-file }}
