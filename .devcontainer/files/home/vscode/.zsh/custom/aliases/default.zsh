@@ -17,6 +17,9 @@ alias .7='cd -7'
 alias .8='cd -8'
 alias .9='cd -9'
 
+alias dev='cd /workspace'
+alias ws='cd /workspace'
+
 if command -v eza >/dev/null 2>&1; then
   alias l="eza -lah --color=auto --icons=auto"
   alias ls="eza -ah --color=auto --icons=auto"

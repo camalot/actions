@@ -6,10 +6,19 @@
 
 set -euo pipefail
 
-COLOR_RESET="\033[0m"
-COLOR_GREEN="\033[32m"
-COLOR_BLUE="\033[34m"
-# COLOR_RED="\033[31m"
+# shellcheck disable=SC1091
+source "$(dirname "$0")/helpers.sh"
+
+function claude_init() {
+  mkdir -p /home/vscode/.claude
+  ([ -f /home/vscode/.claude-persist/.credentials.json ] && \
+    cp /home/vscode/.claude-persist/.credentials.json /home/vscode/.claude/.credentials.json || true \
+  ) && \
+  ([ -f /home/vscode/.claude-persist/.claude.json ] && \
+    cp /home/vscode/.claude-persist/.claude.json /home/vscode/.claude.json || \
+      echo '{\"hasCompletedOnboarding\":true}' > /home/vscode/.claude.json
+    )
+}
 
 function fix_ssh_permissions() {
   echo -e "${COLOR_BLUE}=================================================================${COLOR_RESET}"
@@ -48,6 +57,7 @@ echo -e "${COLOR_GREEN}=========================================================
 echo ""
 
 fix_ssh_permissions
+claude_init
 
 echo ""
 echo -e "${COLOR_GREEN}=================================================================${COLOR_RESET}"

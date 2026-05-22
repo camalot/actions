@@ -1,0 +1,35 @@
+[project]
+name = "tests-summary"
+version = "0.1.0"
+description = "Generate Markdown summaries from test and coverage reports for GitHub Actions"
+readme = "README.md"
+requires-python = ">=3.10"
+
+# All report parsing uses the Python standard library only (xml.etree,
+# json, argparse, pathlib).  No third-party runtime dependencies are needed.
+dependencies = []
+
+[project.optional-dependencies]
+# Install these in the environment that *generates* the reports, not the one
+# that runs this script.
+pytest-reports = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",          # produces lcov.info via --cov-report=lcov
+    "pytest-json-report>=1.5",  # produces .report.json via --json-report
+]
+
+# Development / testing dependencies for this script itself.
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
+
+[project.scripts]
+tests-summary = "main:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*"]

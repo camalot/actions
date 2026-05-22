@@ -1,0 +1,85 @@
+---
+name: "Test Coverage Report"
+description: "Collect coverage, and post a summary comment on pull requests."
+inputs:
+  token:
+    description: "GitHub token used to post coverage comment on pull requests"
+    required: false
+    default: "${{ github.token }}"
+
+  lcov-file:
+    description: "Path to the lcov.info file"
+    required: true
+    default: "reports/coverage/lcov.info"
+
+  junit-file:
+    description: "Path to the JUnit XML file"
+    required: true
+    default: "reports/test/junit.xml"
+
+  pytest-json-file:
+    description: "Path to the pytest JSON report file"
+    required: true
+    default: "reports/test/.report.json"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create /etc/lsb-release
+      shell: bash
+      run: |
+        echo "DISTRIB_RELEASE=22.04" | sudo tee -a /etc/lsb-release
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+
+    # set up Python (if needed)
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        architecture: x64
+        python-version: '3.13'
+        cache: 'pip'
+
+    - name: Generate Test & Coverage Reports
+      if: ${{ always() }}
+      shell: bash
+      env:
+        TEST_LCOV_FILE: ${{ inputs.lcov-file }}
+        TEST_JUNIT_FILE: ${{ inputs.junit-file }}
+        TEST_PYTEST_JSON_FILE: ${{ inputs.pytest-json-file }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        python "${GITHUB_ACTION_PATH}/../../../.github/scripts/tests-summary/main.py" \
+          --lcov "$TEST_LCOV_FILE" \
+          --junit "$TEST_JUNIT_FILE" \
+          --pytest-json "$TEST_PYTEST_JSON_FILE" \
+          --summary-out reports/coverage/step-summary.md \
+          --comment-out reports/coverage/pr-comment.md \
+          --run-url "$RUN_URL"
+
+    - name: Write Step Summary
+      if: ${{ always() }}
+      shell: bash
+      run: cat reports/coverage/step-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+    # ── PR comment (only on pull_request events) ────────────────────────
+    - name: Find existing Coverage Report comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/find-comment@v4
+      id: find_comment
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body-includes: "<!-- coverage-report -->"
+        token: ${{ inputs.token }}
+
+    - name: Post or Update PR comment
+      if: github.event_name == 'pull_request'
+      uses: peter-evans/create-or-update-comment@v5
+      with:
+        comment-id: ${{ steps.find_comment.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body-path: reports/coverage/pr-comment.md
+        edit-mode: replace
+        token: ${{ inputs.token }}
