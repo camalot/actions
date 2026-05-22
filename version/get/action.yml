@@ -11,6 +11,14 @@ inputs:
       or when git-cliff cannot determine a bumped version.
     required: false
     default: 'v0.1.0'
+  fail_on_default:
+    description: >
+      When 'true', fail the action if the computed next version equals
+      default_version and that tag already exists in the repository.
+      This catches cases where version detection broke (e.g. shallow clone,
+      no conventional commits) rather than silently re-tagging with the default.
+    required: false
+    default: 'false'
 outputs:
   current_version:
     description: 'The most recent v* tag found in the repo, without leading "v" (e.g. 1.2.3).'
@@ -25,8 +33,8 @@ outputs:
     description: 'Major.Minor of next_version (e.g. 1.2).'
     value: ${{ steps.compute.outputs.major_minor }}
   major_minor_patch:
-    description: 'Full Major.Minor.Build of next_version (e.g. 1.2.4).'
-    value: ${{ steps.compute.outputs.major_minor_patch}}
+    description: 'Full Major.Minor.Patch of next_version (e.g. 1.2.4).'
+    value: ${{ steps.compute.outputs.major_minor_patch }}
   tag_major:
     description: 'Major tag form with "v" prefix (e.g. v1).'
     value: ${{ steps.compute.outputs.tag_major }}
@@ -35,15 +43,10 @@ outputs:
     value: ${{ steps.compute.outputs.tag_major_minor }}
   tag_major_minor_patch:
     description: 'Full tag form with "v" prefix (e.g. v1.2.4).'
-    value: ${{ steps.compute.outputs.tag_major_minor_patch}}
+    value: ${{ steps.compute.outputs.tag_major_minor_patch }}
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-
     - name: Check for .nvmrc
       id: nvmrc_check
       shell: bash
@@ -58,6 +61,7 @@ runs:
       if: steps.nvmrc_check.outputs.exists == 'true'
       with:
         node-version-file: '.nvmrc'
+
     - uses: actions/setup-node@v6
       if: steps.nvmrc_check.outputs.exists == 'false'
       with:
@@ -73,16 +77,36 @@ runs:
       shell: bash
       env:
         DEFAULT_VERSION: ${{ inputs.default_version }}
+        FAIL_ON_DEFAULT: ${{ inputs.fail_on_default }}
       run: |
         set -euo pipefail
 
-        # Most recent v* tag; fall back to the configured default.
-        CURRENT_VERSION="$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || echo "${DEFAULT_VERSION}")"
+        # Match only fully-qualified vMAJOR.MINOR.PATCH tags so that floating
+        # tags (v1, v1.1) at the same commit are never returned as CURRENT_VERSION.
+        # Without this, git describe may return v1 or v1.1 and git-cliff then
+        # computes a wrong base, silently falling back to the default.
+        CURRENT_VERSION="$(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0 2>/dev/null || echo "${DEFAULT_VERSION}")"
 
-        # git-cliff returns the next bumped version (with leading 'v') based on
-        # conventional commits since CURRENT_VERSION. Fall back to default if
-        # the tool exits non-zero (e.g. no commits to analyze).
-        NEXT_VERSION="$(npx git-cliff --bumped-version --offline --unreleased 2>/dev/null || echo "${DEFAULT_VERSION}")"
+        # Scope git-cliff to exactly CURRENT_VERSION..HEAD so it is unaffected
+        # by floating tags that may sit at the same commit as CURRENT_VERSION.
+        # --offline prevents any GitHub/GitLab API calls.
+        NEXT_VERSION="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
+
+        # Fall back to the default when git-cliff returns nothing (empty range,
+        # no conventional commits, or other non-fatal failure).
+        if [[ -z "${NEXT_VERSION}" ]]; then
+          NEXT_VERSION="${DEFAULT_VERSION}"
+        fi
+
+        # Guard: fail when the next version equals the default AND that tag
+        # already exists — this almost always means detection broke rather than
+        # a genuine first-release scenario.
+        if [[ "${FAIL_ON_DEFAULT}" == "true" && "${NEXT_VERSION}" == "${DEFAULT_VERSION}" ]]; then
+          if git tag --list | grep -qx "${DEFAULT_VERSION}"; then
+            echo "::error::Computed next version is the default (${DEFAULT_VERSION}), but that tag already exists. Verify that fetch-depth: 0 is set and commits follow Conventional Commits format."
+            exit 1
+          fi
+        fi
 
         # Normalize: strip any leading 'v' for the plain forms.
         CURRENT_PLAIN="${CURRENT_VERSION#v}"
