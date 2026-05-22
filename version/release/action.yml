@@ -86,11 +86,13 @@ runs:
       env:
         GIT_USER_NAME: ${{ inputs.git_user_name }}
         GIT_USER_EMAIL: ${{ inputs.git_user_email }}
+        GH_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
         echo "::group::Configure git user"
         git config user.name  "${GIT_USER_NAME}"
         git config user.email "${GIT_USER_EMAIL}"
+        gh auth setup-git
         echo "::endgroup::"
 
     # Render only the new version's changelog section first, before any
