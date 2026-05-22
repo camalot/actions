@@ -15,12 +15,12 @@ files first.
 1. Checks out the full git history (no shallow clone)
 2. Sets up Python 3.13 with pip caching
 3. Creates an isolated virtual environment and installs the
-   `.github/scripts/tests-summary` tool from its `pyproject.toml`
+    `.github/scripts/tests-summary` tool from its `pyproject.toml`
 4. Runs `tests-summary` against the supplied report files, writing a detailed
-   step-summary Markdown file and a compact PR-comment Markdown file
+    step-summary Markdown file and a compact PR-comment Markdown file
 5. Appends the step summary to `$GITHUB_STEP_SUMMARY`
 6. On `pull_request` events: finds any existing comment identified by
-   `<!-- coverage-report -->` and creates or updates it
+    `<!-- coverage-report -->` and creates or updates it
 
 ## Requirements
 

@@ -5,11 +5,11 @@ tests-summary: Generate Markdown summaries from test and coverage reports.
 Supported report formats
 ------------------------
 Coverage:
-  * LCOV          --lcov PATH          (default: lcov.info)
+    * LCOV          --lcov PATH          (default: lcov.info)
 
 Test results:
-  * JUnit XML     --junit PATH         (default: junit.xml)
-  * pytest-json   --pytest-json PATH   (default: .report.json)
+    * JUnit XML     --junit PATH         (default: junit.xml)
+    * pytest-json   --pytest-json PATH   (default: .report.json)
 
 Each source is optional. A file is silently skipped when it does not exist,
 so the script integrates cleanly into CI pipelines that may or may not produce
@@ -17,7 +17,7 @@ every report type.
 
 Usage:
     python main.py [--lcov PATH] [--junit PATH] [--pytest-json PATH]
-                   [--summary-out PATH] [--comment-out PATH] [--run-url URL]
+        [--summary-out PATH] [--comment-out PATH] [--run-url URL]
 """
 
 from __future__ import annotations
@@ -29,7 +29,6 @@ import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-
 
 # ══════════════════════════════════════════════════════════════════════════════
 # Data models
@@ -54,11 +53,19 @@ class FileRecord:
 
     @property
     def branch_pct(self) -> float:
-        return (self.branches_hit / self.branches_found * 100) if self.branches_found else 100.0
+        return (
+            (self.branches_hit / self.branches_found * 100)
+            if self.branches_found
+            else 100.0
+        )
 
     @property
     def fn_pct(self) -> float:
-        return (self.functions_hit / self.functions_found * 100) if self.functions_found else 100.0
+        return (
+            (self.functions_hit / self.functions_found * 100)
+            if self.functions_found
+            else 100.0
+        )
 
 
 @dataclass
@@ -236,8 +243,7 @@ class JunitParser(TestResultsParser):
         elif root.tag == "testsuite":
             suite_elements = [root]
         else:
-            raise ValueError(
-                f"Unexpected JUnit XML root element: <{root.tag}>")
+            raise ValueError(f"Unexpected JUnit XML root element: <{root.tag}>")
 
         suites: list[TestSuite] = []
         total_duration = 0.0
@@ -259,16 +265,13 @@ class JunitParser(TestResultsParser):
 
                 if failure_el is not None:
                     status = "failed"
-                    message = failure_el.get("message", "") or (
-                        failure_el.text or "")
+                    message = failure_el.get("message", "") or (failure_el.text or "")
                 elif error_el is not None:
                     status = "error"
-                    message = error_el.get("message", "") or (
-                        error_el.text or "")
+                    message = error_el.get("message", "") or (error_el.text or "")
                 elif skipped_el is not None:
                     status = "skipped"
-                    message = skipped_el.get("message", "") or (
-                        skipped_el.text or "")
+                    message = skipped_el.get("message", "") or (skipped_el.text or "")
                 else:
                     status = "passed"
                     message = ""
@@ -283,8 +286,7 @@ class JunitParser(TestResultsParser):
                     )
                 )
 
-            suites.append(
-                TestSuite(name=name, test_cases=cases, duration=duration))
+            suites.append(TestSuite(name=name, test_cases=cases, duration=duration))
 
         return TestResults(suites=suites, source="junit", duration=total_duration)
 
@@ -350,7 +352,9 @@ class PytestJsonParser(TestResultsParser):
         for suite in suites.values():
             suite.duration = sum(tc.duration for tc in suite.test_cases)
 
-        return TestResults(suites=list(suites.values()), source="pytest-json", duration=duration)
+        return TestResults(
+            suites=list(suites.values()), source="pytest-json", duration=duration
+        )
 
     @staticmethod
     def _extract_message(test: dict, outcome: str) -> str:
@@ -411,7 +415,7 @@ def _short_path(path: str) -> str:
     """Strip common leading path segments for readability."""
     for prefix in ("app/aqueduct/", "app/", "src/"):
         if path.startswith(prefix):
-            return path[len(prefix):]
+            return path[len(prefix) :]
     return path
 
 
@@ -458,8 +462,7 @@ def format_test_results_summary(results: TestResults) -> str:
     ]
 
     # Prominently list any failed/errored tests.
-    failed = [tc for tc in results.all_test_cases if tc.status in (
-        "failed", "error")]
+    failed = [tc for tc in results.all_test_cases if tc.status in ("failed", "error")]
     if failed:
         lines += ["### Failed Tests", ""]
         for tc in failed[:20]:
@@ -510,8 +513,7 @@ def format_test_results_comment(results: TestResults, run_url: str = "") -> str:
         "",
     ]
 
-    failed = [tc for tc in results.all_test_cases if tc.status in (
-        "failed", "error")]
+    failed = [tc for tc in results.all_test_cases if tc.status in ("failed", "error")]
     if failed:
         lines += ["<details>", "<summary>Failed tests</summary>", ""]
         for tc in failed[:10]:
@@ -675,19 +677,19 @@ Each report source is optional.  A file is silently skipped when it does not
 exist, so you only need to supply the flags that apply to your project.
 
 Examples:
-  # Use all defaults (looks for lcov.info, junit.xml, .report.json):
-  python main.py --summary-out "$GITHUB_STEP_SUMMARY"
+    # Use all defaults (looks for lcov.info, junit.xml, .report.json):
+    python main.py --summary-out "$GITHUB_STEP_SUMMARY"
 
-  # Explicit paths + PR comment output:
-  python main.py \\
-    --lcov reports/coverage/lcov.info \\
-    --junit reports/test/junit.xml \\
-    --summary-out reports/step-summary.md \\
-    --comment-out reports/pr-comment.md \\
-    --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+    # Explicit paths + PR comment output:
+    python main.py \\
+        --lcov reports/coverage/lcov.info \\
+        --junit reports/test/junit.xml \\
+        --summary-out reports/step-summary.md \\
+        --comment-out reports/pr-comment.md \\
+        --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-  # Coverage only, no test results:
-  python main.py --no-junit --no-pytest-json --lcov coverage/lcov.info
+    # Coverage only, no test results:
+    python main.py --no-junit --no-pytest-json --lcov coverage/lcov.info
 """,
     )
 
@@ -698,8 +700,9 @@ Examples:
         metavar="PATH",
         help="Path to LCOV coverage file (default: lcov.info)",
     )
-    cov.add_argument("--no-lcov", action="store_true",
-                     help="Disable LCOV coverage report")
+    cov.add_argument(
+        "--no-lcov", action="store_true", help="Disable LCOV coverage report"
+    )
 
     tst = parser.add_argument_group("Test result sources")
     tst.add_argument(
@@ -708,8 +711,9 @@ Examples:
         metavar="PATH",
         help="Path to JUnit XML report (default: junit.xml)",
     )
-    tst.add_argument("--no-junit", action="store_true",
-                     help="Disable JUnit XML test results")
+    tst.add_argument(
+        "--no-junit", action="store_true", help="Disable JUnit XML test results"
+    )
     tst.add_argument(
         "--pytest-json",
         default=".report.json",
@@ -717,7 +721,9 @@ Examples:
         help="Path to pytest-json-report file (default: .report.json)",
     )
     tst.add_argument(
-        "--no-pytest-json", action="store_true", help="Disable pytest-json-report test results"
+        "--no-pytest-json",
+        action="store_true",
+        help="Disable pytest-json-report test results",
     )
 
     out = parser.add_argument_group("Output options")
@@ -768,10 +774,12 @@ def main() -> int:
 
         try:
             results = src.parser.parse(report_path)
-            summary_sections.append(src.summary_formatter(
-                results))  # type: ignore[call-arg]
-            comment_sections.append(src.comment_formatter(
-                results, args.run_url))  # type: ignore[call-arg]
+            summary_sections.append(
+                src.summary_formatter(results)
+            )  # type: ignore[call-arg]
+            comment_sections.append(
+                src.comment_formatter(results, args.run_url)
+            )  # type: ignore[call-arg]
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(
@@ -802,10 +810,12 @@ def main() -> int:
                     file=sys.stderr,
                 )
                 continue
-            summary_sections.append(src.summary_formatter(
-                coverage))  # type: ignore[call-arg]
-            comment_sections.append(src.comment_formatter(
-                coverage, args.run_url))  # type: ignore[call-arg]
+            summary_sections.append(
+                src.summary_formatter(coverage)
+            )  # type: ignore[call-arg]
+            comment_sections.append(
+                src.comment_formatter(coverage, args.run_url)
+            )  # type: ignore[call-arg]
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(
