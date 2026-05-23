@@ -92,11 +92,13 @@ commit_preprocessors = [
   # { pattern = '(?s)^v\d+\.\d+\.\d+\s+\(#\d+\)\n.*', replace = "chore(release): pr squash merge summary" },
   # Remove leading asterisks from GitHub PR squash commits (e.g. "* feat: ..." → "feat: ...").
   # Allows multi-line bodies to be preserved without fragmenting into separate entries.
-  { pattern = '^(\n\* )', replace = "\n" }, # Remove leading asterisks from GitHub PR squash commits (e.g. "* feat: ..." → "feat: ...").
-    # Remove leading newlines from commit messages.
+  # Strip leading "* " from squash-merge body lines so each line is recognised as a
+  # conventional commit when split_commits = true.  The previous '^(\n\* )' pattern
+  # was anchored to start-of-string and never matched the body lines.
+  { pattern = '\n\* ', replace = '\n' },
   # Replace issue numbers with link templates to be updated in `changelog.postprocessors`.
   { pattern = '\((\w+\s)?#([0-9]+)\)', replace = "([#${2}](<REPO>/issues/${2}))"},
-  # { pattern = '(ABZ|DEY)-(\\d+)', replace = "[$1-$2](https://my-jira.atlassian.net/browse/$1-$2)"},
+  { pattern = '(SRE|NT|CIAS|CI|SREW|APPSEC|TACO|CIMD)-(\d+)', replace = "[$1-$2](https://imanage-jira.atlassian.net/browse/$1-$2)"},
   # Check spelling of the commit message using https://github.com/crate-ci/typos.
   # If the spelling is incorrect, it will be fixed automatically.
   #{ pattern = '.*', replace_command = 'typos --write-changes -' },
@@ -133,7 +135,7 @@ filter_merge_commits = true
 fail_on_unmatched_commit = false
 # An array of link parsers for extracting external references, and turning them into URLs, using regex.
 link_parsers = [
-  # { pattern = "(ABZ|DEY)-(\\d+)", href = "https://my-jira.atlassian.net/browse/$1-$2"},
+  # { pattern = "(SRE|NT|CIAS|CI|SREW|APSEC|TACO|CIMD)-(\\d+)", href = "https://imanage-jira.atlassian.net/browse/$1-$2"},
 ]
 # Include only the tags that belong to the current branch.
 use_branch_tags = false
@@ -147,4 +149,4 @@ sort_commits = "oldest"
 # Process submodules commits
 recurse_submodules = false
 
-tag_pattern = "v[0-9].*"
+tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+$"

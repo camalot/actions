@@ -19,6 +19,14 @@ inputs:
       no conventional commits) rather than silently re-tagging with the default.
     required: false
     default: 'false'
+  fail_on_same_version:
+    description: >
+      When 'true', fail the action if next_version equals current_version and
+      the full v{major}.{minor}.{patch} tag already exists. Floating tags (v1,
+      v1.1) may be recreated safely, but re-applying an existing patch tag means
+      version detection broke (e.g. squash merge commit not parsed as conventional).
+    required: false
+    default: 'true'
   ENABLE_PR_COMMENT:
     description: >
       When 'true', post (or update) a pull-request comment containing the
@@ -93,6 +101,7 @@ runs:
       env:
         DEFAULT_VERSION: ${{ inputs.default_version }}
         FAIL_ON_DEFAULT: ${{ inputs.fail_on_default }}
+        FAIL_ON_SAME_VERSION: ${{ inputs.fail_on_same_version }}
       run: |
         set -euo pipefail
 
@@ -157,6 +166,17 @@ runs:
           fi
         fi
 
+        # Guard: fail when next_version == current_version and the full patch tag already
+        # exists. Floating tags (v1, v1.1) are safe to recreate; a matching vX.Y.Z tag
+        # means we would silently re-apply an existing release — that means version
+        # detection broke (e.g. squash merge body lines not parsed as conventional commits).
+        if [[ "${FAIL_ON_SAME_VERSION}" == "true" && "${NEXT_PLAIN}" == "${CURRENT_PLAIN}" ]]; then
+          if git tag --list | grep -qFx "v${NEXT_PLAIN}"; then
+            echo "::error::next_version (${NEXT_PLAIN}) equals current_version and tag v${NEXT_PLAIN} already exists. Version detection likely failed — verify that commits follow Conventional Commits format and that fetch-depth: 0 is set."
+            exit 1
+          fi
+        fi
+
         MAJOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1)"
         MAJOR_MINOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1-2)"
         MAJOR_MINOR_PATCH="$(echo "${NEXT_PLAIN}" | cut -d. -f1-3)"
@@ -212,7 +232,6 @@ runs:
         MJM: "${{ steps.compute.outputs.major_minor }}"
         MJMP: "${{ steps.compute.outputs.major_minor_patch }}"
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
       run: |
         {
           echo "<!-- version-get-report -->"
@@ -223,11 +242,11 @@ runs:
           echo "| Current Version | $CV |"
           echo "| Next Version | $NV |"
           echo "| Major | $MJ |"
-          echo "| Major Minor | $MJM |"
-          echo "| Major Minor Patch | $MJMP |"
+          echo "| Major.Minor | $MJM |"
+          echo "| Major.Minor.Patch | $MJMP |"
           echo "| Tag Major | $TMJ |"
-          echo "| Tag Major Minor | $TMJM |"
-          echo "| Tag Major Minor Patch | $TMJMP |"
+          echo "| Tag Major.Minor | $TMJM |"
+          echo "| Tag Major.Minor.Patch | $TMJMP |"
         } > /tmp/version-get-comment.md
 
     - name: Find existing Version comment

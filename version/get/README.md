@@ -26,6 +26,7 @@ If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the
 | --- | --- | --- | --- |
 | `default_version` | No | `v0.1.0` | Fallback version (with leading `v`) used when no prior tags exist or when `git-cliff` cannot determine a bumped version. |
 | `fail_on_default` | No | `false` | When `true`, fails the action if the computed next version equals `default_version` **and** that tag already exists. This guards against silently re-using a stale default when version detection breaks (e.g. shallow clone, no conventional commits). A genuine first release — where the default tag does not yet exist — still succeeds. |
+| `fail_on_same_version` | No | `true` | When `true`, fails the action if `next_version` equals `current_version` **and** the full `vMAJOR.MINOR.PATCH` tag already exists. This prevents silently re-tagging an existing release when version detection breaks — the most common cause being a squash-merged PR whose body lines are not parsed as conventional commits. Floating tags (`v1`, `v1.1`) are never checked; only the full patch tag triggers the failure. Set to `false` to suppress the guard. |
 | `enable_pr_comment` | No | `false` | When `true`, posts (or updates) a comment on the pull request with the version summary table. Has no effect on non-pull-request events. Can also be enabled by setting the `ENABLE_PR_COMMENT` environment variable to `'true'` at the job or workflow level. |
 | `token` | No | `github.token` | GitHub token used to post or update the PR comment. Only required when `enable_pr_comment` is `true`. |
 
@@ -77,6 +78,29 @@ jobs:
         with:
           default_version: 'v1.0.0'
           fail_on_default: 'true'
+
+      - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
+```
+
+---
+
+### Suppress the same-version guard
+
+`fail_on_same_version` defaults to `true`, which fails the action when the computed next version matches the current version and the full patch tag already exists. This catches broken version detection early. If you have a workflow where re-tagging the same version is intentional (e.g. a dry-run or a re-run after a partial failure that already created the tag), you can opt out:
+
+```yaml
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        uses: camalot/actions/version/get@v1
+        with:
+          fail_on_same_version: 'false'
 
       - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
 ```
