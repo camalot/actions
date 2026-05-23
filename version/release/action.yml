@@ -39,11 +39,15 @@ inputs:
   git_user_email:
     description: 'Author email for the changelog commit.'
     required: false
-    default: '41898282+github-actions[bot]@users.noreply.github.com'
+    default: 'github-actions[bot]@users.noreply.github.com'
   chart_version_file:
     description: 'Path to a Chart.yaml file whose version field should be updated to match the new version.'
     required: false
     default: 'chart/Chart.yaml'
+  chart_app_version_file:
+    description: 'Path to a Chart.yaml file whose appVersion field should be updated to match the new version. If the same file is specified for both chart_version_file and chart_app_version_file, both fields will be updated. If not specified, appVersion will not be updated.'
+    required: false
+    default: ''
   jekyll_config_file:
     description: 'Path to a Jekyll _config.yml file whose version field should be updated to match the new version.'
     required: false
@@ -155,23 +159,33 @@ runs:
       env:
         NEXT_VERSION: ${{ inputs.tag_major_minor_patch }}
         CHART_VERSION_FILE: ${{ inputs.chart_version_file }}
+        CHART_APP_VERSION_FILE: ${{ inputs.chart_app_version_file }}
         JEKYLL_CONFIG_FILE: ${{ inputs.jekyll_config_file }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
         echo "::group::Update version files"
-        if [[ -f ".version" ]]; then
+        if [[ -f ".version" ]] || [[ -L ".version" ]]; then
+          echo "Updating .version file to ${NEXT_VERSION#v}"
           echo "${NEXT_VERSION#v}" > .version
           git add .version
         fi
 
-        if [[ -f "${CHART_VERSION_FILE}" ]]; then
+        if [[ -f "${CHART_VERSION_FILE}" ]] || [[ -L "${CHART_VERSION_FILE}" ]]; then
+          echo "Updating ${CHART_VERSION_FILE} version to ${NEXT_VERSION#v}"
           yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${CHART_VERSION_FILE}"
-          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${CHART_VERSION_FILE}"
           git add "${CHART_VERSION_FILE}"
         fi
 
-        if [[ -f "${JEKYLL_CONFIG_FILE}" ]]; then
+        if [[ -f "${CHART_APP_VERSION_FILE}" ]] || [[ -L "${CHART_APP_VERSION_FILE}" ]]; then
+          echo "Updating ${CHART_APP_VERSION_FILE} appVersion to ${NEXT_VERSION#v}"
+          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${CHART_APP_VERSION_FILE}"
+          git add "${CHART_APP_VERSION_FILE}"
+        fi
+
+
+        if [[ -f "${JEKYLL_CONFIG_FILE}" ]] || [[ -L "${JEKYLL_CONFIG_FILE}" ]]; then
+          echo "Updating ${JEKYLL_CONFIG_FILE} version to ${NEXT_VERSION#v}"
           yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${JEKYLL_CONFIG_FILE}"
           git add "${JEKYLL_CONFIG_FILE}"
         fi

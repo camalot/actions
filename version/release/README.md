@@ -52,12 +52,13 @@ permissions:
 | `git_user_name` | `github-actions[bot]` | Author name for the changelog commit. |
 | `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
 | `chart_version_file` | `chart/Chart.yaml` | Path to a `Chart.yaml` file whose `version` and `appVersion` fields are updated to the new version. Skipped if the file does not exist. |
+| `chart_app_version_file` | `` | Path to a `Chart.yaml` file whose `appVersion` field is updated to match the new version. Skipped if the file does not exist. |
 | `jekyll_config_file` | `docs/_config.yml` | Path to a Jekyll `_config.yml` file whose `version` field is updated to the new version. Skipped if the file does not exist. |
 
 ## Outputs
 
 | Output | Description |
-|---|---|
+| --- | --- |
 | `release_notes_file` | Path to the rendered release-notes file (only the new version section). |
 | `release_url` | URL of the created GitHub Release. |
 
