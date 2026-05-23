@@ -211,21 +211,23 @@ runs:
         MJ: "${{ steps.compute.outputs.major }}"
         MJM: "${{ steps.compute.outputs.major_minor }}"
         MJMP: "${{ steps.compute.outputs.major_minor_patch }}"
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
       run: |
         {
           echo "<!-- version-get-report -->"
-          echo "### Version Determination"
+          echo "### Version Determination · [Details →]($RUN_URL)"
           echo ""
           echo "| Field | Value |"
           echo "| --- | --- |"
-          echo "| current_version | $CV |"
-          echo "| next_version | $NV |"
-          echo "| major | $MJ |"
-          echo "| major_minor | $MJM |"
-          echo "| major_minor_patch | $MJMP |"
-          echo "| tag_major | $TMJ |"
-          echo "| tag_major_minor | $TMJM |"
-          echo "| tag_major_minor_patch | $TMJMP |"
+          echo "| Current Version | $CV |"
+          echo "| Next Version | $NV |"
+          echo "| Major | $MJ |"
+          echo "| Major Minor | $MJM |"
+          echo "| Major Minor Patch | $MJMP |"
+          echo "| Tag Major | $TMJ |"
+          echo "| Tag Major Minor | $TMJM |"
+          echo "| Tag Major Minor Patch | $TMJMP |"
         } > /tmp/version-get-comment.md
 
     - name: Find existing Version comment
