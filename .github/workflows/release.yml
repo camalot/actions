@@ -15,6 +15,9 @@ jobs:
     permissions:
       contents: read
       statuses: write
+      issues: write
+      pull-requests: write
+
     outputs:
       ver_major_minor_patch: ${{ steps.get.outputs.major_minor_patch }}
       ver_major_minor: ${{ steps.get.outputs.major_minor }}
@@ -28,13 +31,16 @@ jobs:
       # available on disk; the action itself does its own full-history checkout.
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
       - name: Determine next version
         id: get
         uses: ./version/get
         with:
           default_version: v1.0.0
+          fail_on_default: true
+          fail_on_same_version: true
+          token: ${{ github.token }}
       - run: |
           echo "next version: ${TAG}"
         env:
@@ -152,7 +158,7 @@ jobs:
       # checkout with credentials.
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
       - name: Tag, changelog, and GitHub Release
         uses: ./version/release
