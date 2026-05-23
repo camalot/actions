@@ -9,9 +9,9 @@ Thank you for your interest in contributing to this repository! This project is 
 1. **Fork** the repository and clone your fork locally.
 2. Create a new branch from `main` with a descriptive name:
 
-   ```bash
-   git checkout -b feat/my-new-action
-   ```
+    ```bash
+    git checkout -b feat/my-new-action
+    ```
 
 3. Make your changes, following the conventions described below.
 4. Push your branch to your fork and open a Pull Request against `main`.
@@ -43,12 +43,14 @@ For example:
 1. Choose (or create) an appropriate category directory.
 2. Create a sub-directory for your action: `<category>/<action-name>/`.
 3. Add `action.yml` — follow the structure of existing actions:
-   - Use `composite` as the `runs.using` value.
-   - Declare all inputs with clear `description`, `required`, and `default` fields.
-   - Declare all outputs with clear `description` and `value` fields.
-   - Wrap logical blocks with `::group::`/`::endgroup::` for readable logs.
-   - Use `set -euo pipefail` at the top of every `bash` step.
-   - Pass sensitive values and GitHub context through `env:` rather than inline expressions.
+
+    - Use `composite` as the `runs.using` value.
+    - Declare all inputs with clear `description`, `required`, and `default` fields.
+    - Declare all outputs with clear `description` and `value` fields.
+    - Wrap logical blocks with `::group::`/`::endgroup::` for readable logs.
+    - Use `set -euo pipefail` at the top of every `bash` step.
+    - Pass sensitive values and GitHub context through `env:` rather than inline expressions.
+
 4. Add a `README.md` documenting inputs, outputs, and a usage example.
 
 ---
