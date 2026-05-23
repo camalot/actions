@@ -27,7 +27,7 @@ inputs:
       version detection broke (e.g. squash merge commit not parsed as conventional).
     required: false
     default: 'true'
-  ENABLE_PR_COMMENT:
+  enable_pr_comment:
     description: >
       When 'true', post (or update) a pull-request comment containing the
       version summary table. The comment is identified by an HTML marker so
