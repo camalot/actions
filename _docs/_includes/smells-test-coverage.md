@@ -1,0 +1,1 @@
+../../smells/test/coverage/README.md
