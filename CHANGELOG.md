@@ -1,3 +1,68 @@
+## [1.2.0] - 2026-05-24
+
+### 🚀 Features
+
+- Added more robust coverage report by @camalot
+
+- Allow version/get to post comment to PR by @camalot
+
+
+### 🐛 Bug Fixes
+
+- Black and isort run by @camalot
+
+- Re-enable black and isort by @camalot
+
+- Resolve zizmor issues by @camalot
+
+- Added codespell config files by @camalot
+
+- Added python-black and isort configs by @camalot
+
+- Ensure steps have necessary authentication by @camalot
+
+- Ensure authentication via gh cli by @camalot
+
+- Do not use pytest-json-report for pytest action. uses junit and lcov only by @camalot
+
+- Use correct endpoint for action by @camalot
+
+- Fix possibility of detecting and using v1.0.0 tag for next by @camalot
+
+- Better check for default version being returned by @camalot
+
+- Separate chart version and app version in chart.yaml by @camalot
+
+- Added link to run details for version output by @camalot
+
+- Ensure better version safety when determining next version by @camalot
+
+- Fix casing of enable_pr_comment by @camalot
+
+- Fix squash commit cliff.toml by @camalot
+
+- Fix release action by @camalot
+
+- Fix linter issues by @camalot
+
+- Run python black fix by @camalot
+
+- Second attempt at running black by @camalot
+
+
+### 📚 Documentation
+
+- Update docs for version/get by @camalot
+
+
+### ⚙️ Miscellaneous Tasks
+
+- *(actions)* Added pr-review action with output of version by @camalot
+
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.1.1...v1.2.0
+
 ## [1.1.1] - 2026-05-21
 
 
