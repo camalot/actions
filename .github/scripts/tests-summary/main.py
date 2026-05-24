@@ -53,11 +53,19 @@ class FileRecord:
 
     @property
     def branch_pct(self) -> float:
-        return (self.branches_hit / self.branches_found * 100) if self.branches_found else 100.0
+        return (
+            (self.branches_hit / self.branches_found * 100)
+            if self.branches_found
+            else 100.0
+        )
 
     @property
     def fn_pct(self) -> float:
-        return (self.functions_hit / self.functions_found * 100) if self.functions_found else 100.0
+        return (
+            (self.functions_hit / self.functions_found * 100)
+            if self.functions_found
+            else 100.0
+        )
 
 
 @dataclass
@@ -235,8 +243,7 @@ class JunitParser(TestResultsParser):
         elif root.tag == "testsuite":
             suite_elements = [root]
         else:
-            raise ValueError(
-                f"Unexpected JUnit XML root element: <{root.tag}>")
+            raise ValueError(f"Unexpected JUnit XML root element: <{root.tag}>")
 
         suites: list[TestSuite] = []
         total_duration = 0.0
@@ -258,16 +265,13 @@ class JunitParser(TestResultsParser):
 
                 if failure_el is not None:
                     status = "failed"
-                    message = failure_el.get("message", "") or (
-                        failure_el.text or "")
+                    message = failure_el.get("message", "") or (failure_el.text or "")
                 elif error_el is not None:
                     status = "error"
-                    message = error_el.get("message", "") or (
-                        error_el.text or "")
+                    message = error_el.get("message", "") or (error_el.text or "")
                 elif skipped_el is not None:
                     status = "skipped"
-                    message = skipped_el.get("message", "") or (
-                        skipped_el.text or "")
+                    message = skipped_el.get("message", "") or (skipped_el.text or "")
                 else:
                     status = "passed"
                     message = ""
@@ -282,8 +286,7 @@ class JunitParser(TestResultsParser):
                     )
                 )
 
-            suites.append(
-                TestSuite(name=name, test_cases=cases, duration=duration))
+            suites.append(TestSuite(name=name, test_cases=cases, duration=duration))
 
         return TestResults(suites=suites, source="junit", duration=total_duration)
 
@@ -336,15 +339,22 @@ class PytestJsonParser(TestResultsParser):
                 suites[module] = TestSuite(name=module)
 
             suites[module].test_cases.append(
-                TestCase(name=test_name, classname=module,
-                         status=status, duration=tc_duration, message=message)
+                TestCase(
+                    name=test_name,
+                    classname=module,
+                    status=status,
+                    duration=tc_duration,
+                    message=message,
+                )
             )
 
         # Recalculate per-suite durations from individual test cases.
         for suite in suites.values():
             suite.duration = sum(tc.duration for tc in suite.test_cases)
 
-        return TestResults(suites=list(suites.values()), source="pytest-json", duration=duration)
+        return TestResults(
+            suites=list(suites.values()), source="pytest-json", duration=duration
+        )
 
     @staticmethod
     def _extract_message(test: dict, outcome: str) -> str:
@@ -353,7 +363,9 @@ class PytestJsonParser(TestResultsParser):
             if phase not in test:
                 continue
             phase_outcome = test[phase].get("outcome", "")
-            if phase_outcome in ("failed", "error") or (phase_outcome == "skipped" and outcome == "skipped"):
+            if phase_outcome in ("failed", "error") or (
+                phase_outcome == "skipped" and outcome == "skipped"
+            ):
                 longrepr = test[phase].get("longrepr", "")
                 if isinstance(longrepr, str) and longrepr:
                     # Return just the first meaningful line, capped at 200 chars.
@@ -403,7 +415,7 @@ def _short_path(path: str) -> str:
     """Strip common leading path segments for readability."""
     for prefix in ("app/aqueduct/", "app/", "src/"):
         if path.startswith(prefix):
-            return path[len(prefix):]
+            return path[len(prefix) :]
     return path
 
 
@@ -421,7 +433,10 @@ def _write_output(content: str, dest: str) -> None:
 # ══════════════════════════════════════════════════════════════════════════════
 
 _SOURCE_LABELS: dict[str, str] = {
-    "junit": "JUnit XML", "pytest-json": "pytest JSON report", "lcov": "LCOV"}
+    "junit": "JUnit XML",
+    "pytest-json": "pytest JSON report",
+    "lcov": "LCOV",
+}
 
 
 def format_test_results_summary(results: TestResults) -> str:
@@ -447,8 +462,7 @@ def format_test_results_summary(results: TestResults) -> str:
     ]
 
     # Prominently list any failed/errored tests.
-    failed = [tc for tc in results.all_test_cases if tc.status in (
-        "failed", "error")]
+    failed = [tc for tc in results.all_test_cases if tc.status in ("failed", "error")]
     if failed:
         lines += ["### Failed Tests", ""]
         for tc in failed[:20]:
@@ -499,8 +513,7 @@ def format_test_results_comment(results: TestResults, run_url: str = "") -> str:
         "",
     ]
 
-    failed = [tc for tc in results.all_test_cases if tc.status in (
-        "failed", "error")]
+    failed = [tc for tc in results.all_test_cases if tc.status in ("failed", "error")]
     if failed:
         lines += ["<details>", "<summary>Failed tests</summary>", ""]
         for tc in failed[:10]:
@@ -682,25 +695,37 @@ Examples:
 
     cov = parser.add_argument_group("Coverage sources")
     cov.add_argument(
-        "--lcov", default="lcov.info", metavar="PATH", help="Path to LCOV coverage file (default: lcov.info)"
+        "--lcov",
+        default="lcov.info",
+        metavar="PATH",
+        help="Path to LCOV coverage file (default: lcov.info)",
     )
-    cov.add_argument("--no-lcov", action="store_true",
-                     help="Disable LCOV coverage report")
+    cov.add_argument(
+        "--no-lcov", action="store_true", help="Disable LCOV coverage report"
+    )
 
     tst = parser.add_argument_group("Test result sources")
     tst.add_argument(
-        "--junit", default="junit.xml", metavar="PATH", help="Path to JUnit XML report (default: junit.xml)"
+        "--junit",
+        default="junit.xml",
+        metavar="PATH",
+        help="Path to JUnit XML report (default: junit.xml)",
     )
-    tst.add_argument("--no-junit", action="store_true",
-                     help="Disable JUnit XML test results")
+    tst.add_argument(
+        "--no-junit", action="store_true", help="Disable JUnit XML test results"
+    )
+
     tst.add_argument(
         "--pytest-json",
         default=".report.json",
         metavar="PATH",
         help="Path to pytest-json-report file (default: .report.json)",
     )
-    tst.add_argument("--no-pytest-json", action="store_true",
-                     help="Disable pytest-json-report test results")
+    tst.add_argument(
+        "--no-pytest-json",
+        action="store_true",
+        help="Disable pytest-json-report test results",
+    )
 
     out = parser.add_argument_group("Output options")
     out.add_argument(
@@ -710,7 +735,10 @@ Examples:
         help="Output path for the detailed step-summary Markdown (- for stdout)",
     )
     out.add_argument(
-        "--comment-out", default=None, metavar="PATH", help="Output path for the brief PR-comment Markdown"
+        "--comment-out",
+        default=None,
+        metavar="PATH",
+        help="Output path for the brief PR-comment Markdown",
     )
     out.add_argument(
         "--run-url",
@@ -747,14 +775,18 @@ def main() -> int:
 
         try:
             results = src.parser.parse(report_path)
-            summary_sections.append(src.summary_formatter(
-                results))  # type: ignore[call-arg]
-            comment_sections.append(src.comment_formatter(
-                results, args.run_url))  # type: ignore[call-arg]
+            summary_sections.append(
+                src.summary_formatter(results)
+            )  # type: ignore[call-arg]
+            comment_sections.append(
+                src.comment_formatter(results, args.run_url)
+            )  # type: ignore[call-arg]
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(
-                f"warning: failed to parse {src.name} report at {report_path}: {exc}", file=sys.stderr)
+                f"warning: failed to parse {src.name} report at {report_path}: {exc}",
+                file=sys.stderr,
+            )
 
     # ── Coverage sources ─────────────────────────────────────────────────────
 
@@ -775,20 +807,27 @@ def main() -> int:
             coverage = src.parser.parse(report_path)
             if not coverage.files:
                 print(
-                    f"warning: no coverage records found in {report_path}", file=sys.stderr)
+                    f"warning: no coverage records found in {report_path}",
+                    file=sys.stderr,
+                )
                 continue
-            summary_sections.append(src.summary_formatter(
-                coverage))  # type: ignore[call-arg]
-            comment_sections.append(src.comment_formatter(
-                coverage, args.run_url))  # type: ignore[call-arg]
+            summary_sections.append(
+                src.summary_formatter(coverage)
+            )  # type: ignore[call-arg]
+            comment_sections.append(
+                src.comment_formatter(coverage, args.run_url)
+            )  # type: ignore[call-arg]
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(
-                f"warning: failed to parse {src.name} report at {report_path}: {exc}", file=sys.stderr)
+                f"warning: failed to parse {src.name} report at {report_path}: {exc}",
+                file=sys.stderr,
+            )
 
     if not found_any:
         print(
-            "warning: no report files found — nothing to output.\n" "Run with --help to see available options.",
+            "warning: no report files found — nothing to output.\n"
+            "Run with --help to see available options.",
             file=sys.stderr,
         )
         return 1
