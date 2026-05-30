@@ -56,7 +56,7 @@ permissions:
 | --- | --- | --- |
 | `changelog_file` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
 | `git_user_name` | `github-actions[bot]` | Author name for the changelog commit. |
-| `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
+| `git_user_email` | `41898282+github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
 | `chart_version_file` | `chart/Chart.yaml` | [**DEPRECATED**] Path to a `Chart.yaml` file whose `version` and `appVersion` fields are updated to the new version. Skipped if the file does not exist. |
 | `chart_app_version_file` | `` | [**DEPRECATED**] Path to a `Chart.yaml` file whose `appVersion` field is updated to match the new version. Skipped if the file does not exist. |
 | `jekyll_config_file` | `docs/_config.yml` | [**DEPRECATED**] Path to a Jekyll `_config.yml` file whose `version` field is updated to the new version. Skipped if the file does not exist. |
@@ -71,7 +71,7 @@ The following environment variables **SHOULD** be used instead of the correspond
 | Environment Variable | Default | Description |
 | --- | --- | --- |
 | `GIT_USER_NAME` | `github-actions[bot]` | Author name for the changelog commit. |
-| `GIT_USER_EMAIL` | `github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
+| `GIT_USER_EMAIL` | `41898282+github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
 | `UPDATE_FILE_CHANGELOG` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
 | `UPDATE_FILE_CHART_VERSION` | `chart/Chart.yaml` | Path to a `Chart.yaml` file whose `version` field is updated to the new version. |
 | `UPDATE_FILE_CHART_APP_VERSION` | `` | Path to a `Chart.yaml` file whose `appVersion` field is updated to the new version. |

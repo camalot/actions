@@ -102,7 +102,7 @@ jobs:
         name: Check if last commit was to update generated documentation
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           # was this triggered by a push that was just to commit the generated documentation?
           if [[ "$(git log -1 --pretty=%B)" == "chore(ignore): generated documentation" ]]; then

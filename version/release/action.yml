@@ -39,7 +39,7 @@ inputs:
   git_user_email:
     description: 'Author email for the changelog commit.'
     required: false
-    default: 'github-actions[bot]@users.noreply.github.com'
+    default: '41898282+github-actions[bot]@users.noreply.github.com'
   ###
   # These are replaced by direct passing of environment variables:
   # UPDATE_FILE_CHART_VERSION
