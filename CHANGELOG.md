@@ -1,3 +1,47 @@
+
+## [v1.2.1](https://github.com/camalot/actions/releases/tag/v1.2.1) - 2026-05-30
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Add environment variables to set args -[@camalot](https://github.com/camalot)
+
+- Fix tabs versus spaces -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- .gitkeep the mount directory -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+- [@github-actions[bot]](https://github.com/github-actions[bot])
+## 📈 Commit Statistics
+
+
+- `3` commits contributed to the release.
+- `6` days have passed between the first and last commit.
+- `3` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `6` days  have passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[3,2,6,3,0,6]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.2.0...v1.2.1
 ## [1.2.0] - 2026-05-24
 
 ### 🚀 Features
