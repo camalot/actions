@@ -1,0 +1,1 @@
+{"id":"1780115924846863","taskName":"poetry:install","taskSource":"workspace-task","scope":"2","definitionType":"workspace-task","startTime":1780115924846,"status":"Failed","definitionPath":"/workspace/.github/scripts/tests-summary/pyproject.toml","endTime":1780115925295,"exitCode":127,"duration":449}

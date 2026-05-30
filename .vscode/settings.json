@@ -22,5 +22,36 @@
   },
   "files.associations": {
     ".codespellrc": "ini"
-  }
+  },
+  "workspaceTasks.enabledTaskTypes": {
+    "ant": false,
+    "ruby": false,
+    "bitbucket": false,
+    "cake": false,
+    "cmake": false,
+    "composer": false,
+    "cargo-make": false,
+    "deno": false,
+    "eslint": false,
+    "gitlab-ci": false,
+    "gradle": false,
+    "gulp": false,
+    "grunt": false,
+    "jupyter": false,
+    "just": false,
+    "make": false,
+    "maven": false,
+    "msbuild": false,
+    "mise": false,
+    "npm": false,
+    "pipenv": false,
+    "poe": false,
+    "pnpm": true,
+    "rake": false,
+    "typescript": false,
+    "webpack": false
+  },
+  "workspaceTasks.groups.taskSeparatorIsRegex": true,
+  "workspaceTasks.groups.taskSeparator": "[:\\/]",
+  "workspaceTasks.groups.useParentFolder": true
 }

@@ -45,15 +45,38 @@ permissions:
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `changelog_file` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
 | `prerelease` | `false` | When `true`, mark the GitHub Release as a prerelease. |
 | `draft` | `false` | When `true`, create the GitHub Release as a draft. |
 | `token` | `github.token` | GitHub token used for `git-cliff` PR metadata lookups and creating the GitHub Release. |
+
+> [!WARNING]
+> The following inputs are **DEPRECATED** and will be removed in a future major release. Please use the corresponding environment variables instead.
+
+| Input | Default | Description |
+| --- | --- | --- |
+| `changelog_file` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
 | `git_user_name` | `github-actions[bot]` | Author name for the changelog commit. |
 | `git_user_email` | `github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
-| `chart_version_file` | `chart/Chart.yaml` | Path to a `Chart.yaml` file whose `version` and `appVersion` fields are updated to the new version. Skipped if the file does not exist. |
-| `chart_app_version_file` | `` | Path to a `Chart.yaml` file whose `appVersion` field is updated to match the new version. Skipped if the file does not exist. |
-| `jekyll_config_file` | `docs/_config.yml` | Path to a Jekyll `_config.yml` file whose `version` field is updated to the new version. Skipped if the file does not exist. |
+| `chart_version_file` | `chart/Chart.yaml` | [**DEPRECATED**] Path to a `Chart.yaml` file whose `version` and `appVersion` fields are updated to the new version. Skipped if the file does not exist. |
+| `chart_app_version_file` | `` | [**DEPRECATED**] Path to a `Chart.yaml` file whose `appVersion` field is updated to match the new version. Skipped if the file does not exist. |
+| `jekyll_config_file` | `docs/_config.yml` | [**DEPRECATED**] Path to a Jekyll `_config.yml` file whose `version` field is updated to the new version. Skipped if the file does not exist. |
+
+### Environment Variables
+
+The following environment variables **SHOULD** be used instead of the corresponding inputs as the inputs are deprecated.
+
+> [!NOTE]
+> If both the input and environment variable are set, the input takes precedence.
+
+| Environment Variable | Default | Description |
+| --- | --- | --- |
+| `GIT_USER_NAME` | `github-actions[bot]` | Author name for the changelog commit. |
+| `GIT_USER_EMAIL` | `github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
+| `UPDATE_FILE_CHANGELOG` | `CHANGELOG.md` | Path (relative to repo root) of the changelog file to update. |
+| `UPDATE_FILE_CHART_VERSION` | `chart/Chart.yaml` | Path to a `Chart.yaml` file whose `version` field is updated to the new version. |
+| `UPDATE_FILE_CHART_APP_VERSION` | `` | Path to a `Chart.yaml` file whose `appVersion` field is updated to the new version. |
+| `UPDATE_FILE_JEKYLL_CONFIG` | `docs/_config.yml` | Path to a Jekyll `_config.yml` file whose `version` field is updated to the new version. |
+| `UPDATE_FILE_PACKAGE_JSON` | `package.json` | Path to a `package.json` file whose `version` field is updated to the new version. |
 
 ## Outputs
 

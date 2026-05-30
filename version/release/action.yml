@@ -40,18 +40,29 @@ inputs:
     description: 'Author email for the changelog commit.'
     required: false
     default: 'github-actions[bot]@users.noreply.github.com'
+  ###
+  # These are replaced by direct passing of environment variables:
+  # UPDATE_FILE_CHART_VERSION
+  # UPDATE_FILE_CHART_APP_VERSION
+  # UPDATE_FILE_JEKYLL_CONFIG
+  # UPDATE_FILE_PACKAGE_JSON
+  ###
   chart_version_file:
     description: 'Path to a Chart.yaml file whose version field should be updated to match the new version.'
     required: false
+    deprecationMessage: 'Use environment variable UPDATE_FILE_CHART_VERSION instead.'
     default: 'chart/Chart.yaml'
   chart_app_version_file:
     description: 'Path to a Chart.yaml file whose appVersion field should be updated to match the new version. If the same file is specified for both chart_version_file and chart_app_version_file, both fields will be updated. If not specified, appVersion will not be updated.'
     required: false
+    deprecationMessage: 'Use environment variable UPDATE_FILE_CHART_APP_VERSION instead.'
     default: ''
   jekyll_config_file:
     description: 'Path to a Jekyll _config.yml file whose version field should be updated to match the new version.'
     required: false
+    deprecationMessage: 'Use environment variable UPDATE_FILE_JEKYLL_CONFIG instead.'
     default: 'docs/_config.yml'
+
 outputs:
   release_notes_file:
     description: 'Path to the rendered release-notes file (only the new version section).'
@@ -139,7 +150,7 @@ runs:
     - name: Update CHANGELOG.md
       shell: bash
       env:
-        CHANGELOG_FILE: ${{ inputs.changelog_file }}
+        CHANGELOG_FILE: ${{ inputs.changelog_file || env.UPDATE_FILE_CHANGELOG }}
         NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
@@ -158,9 +169,10 @@ runs:
       shell: bash
       env:
         NEXT_VERSION: ${{ inputs.tag_major_minor_patch }}
-        CHART_VERSION_FILE: ${{ inputs.chart_version_file }}
-        CHART_APP_VERSION_FILE: ${{ inputs.chart_app_version_file }}
-        JEKYLL_CONFIG_FILE: ${{ inputs.jekyll_config_file }}
+        CHART_VERSION_FILE: ${{ inputs.chart_version_file || env.UPDATE_FILE_CHART_VERSION }}
+        CHART_APP_VERSION_FILE: ${{ inputs.chart_app_version_file || env.UPDATE_FILE_CHART_APP_VERSION }}
+        JEKYLL_CONFIG_FILE: ${{ inputs.jekyll_config_file || env.UPDATE_FILE_JEKYLL_CONFIG }}
+        PACKAGE_JSON_FILE: ${{ env.UPDATE_FILE_PACKAGE_JSON }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
@@ -183,6 +195,11 @@ runs:
           git add "${CHART_APP_VERSION_FILE}"
         fi
 
+        if [[ -f "${PACKAGE_JSON_FILE}" ]] || [[ -L "${PACKAGE_JSON_FILE}" ]]; then
+          echo "Updating ${PACKAGE_JSON_FILE} version to ${NEXT_VERSION#v}"
+          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${PACKAGE_JSON_FILE}"
+          git add "${PACKAGE_JSON_FILE}"
+        fi
 
         if [[ -f "${JEKYLL_CONFIG_FILE}" ]] || [[ -L "${JEKYLL_CONFIG_FILE}" ]]; then
           echo "Updating ${JEKYLL_CONFIG_FILE} version to ${NEXT_VERSION#v}"
@@ -195,7 +212,7 @@ runs:
       id: commit
       shell: bash
       env:
-        CHANGELOG_FILE: ${{ inputs.changelog_file }}
+        CHANGELOG_FILE: ${{ inputs.changelog_file || env.UPDATE_FILE_CHANGELOG }}
         NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
