@@ -48,17 +48,17 @@ inputs:
   # UPDATE_FILE_PACKAGE_JSON
   ###
   chart_version_file:
-    description: 'Path to a Chart.yaml file whose version field should be updated to match the new version.'
+    description: 'Comma-separated paths to Chart.yaml files whose version field should be updated to match the new version.'
     required: false
     deprecationMessage: 'Use environment variable UPDATE_FILE_CHART_VERSION instead.'
     default: 'chart/Chart.yaml'
   chart_app_version_file:
-    description: 'Path to a Chart.yaml file whose appVersion field should be updated to match the new version. If the same file is specified for both chart_version_file and chart_app_version_file, both fields will be updated. If not specified, appVersion will not be updated.'
+    description: 'Comma-separated paths to Chart.yaml files whose appVersion field should be updated to match the new version. If the same file is specified for both chart_version_file and chart_app_version_file, both fields will be updated. If not specified, appVersion will not be updated.'
     required: false
     deprecationMessage: 'Use environment variable UPDATE_FILE_CHART_APP_VERSION instead.'
     default: ''
   jekyll_config_file:
-    description: 'Path to a Jekyll _config.yml file whose version field should be updated to match the new version.'
+    description: 'Comma-separated paths to Jekyll _config.yml files whose version field should be updated to match the new version.'
     required: false
     deprecationMessage: 'Use environment variable UPDATE_FILE_JEKYLL_CONFIG instead.'
     default: 'docs/_config.yml'
@@ -183,29 +183,45 @@ runs:
           git add .version
         fi
 
-        if [[ -f "${CHART_VERSION_FILE}" ]] || [[ -L "${CHART_VERSION_FILE}" ]]; then
-          echo "Updating ${CHART_VERSION_FILE} version to ${NEXT_VERSION#v}"
-          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${CHART_VERSION_FILE}"
-          git add "${CHART_VERSION_FILE}"
-        fi
+        # split by `,` and loop each CHART_VERSION_FILE
+        IFS=',' read -ra CHART_VERSION_FILES <<< "${CHART_VERSION_FILE}"
+        for file in "${CHART_VERSION_FILES[@]}"; do
+          if [[ -f "$file" ]] || [[ -L "$file" ]]; then
+            echo "Updating $file version to ${NEXT_VERSION#v}"
+            yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "$file"
+            git add "$file"
+          fi
+        done
 
-        if [[ -f "${CHART_APP_VERSION_FILE}" ]] || [[ -L "${CHART_APP_VERSION_FILE}" ]]; then
-          echo "Updating ${CHART_APP_VERSION_FILE} appVersion to ${NEXT_VERSION#v}"
-          yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "${CHART_APP_VERSION_FILE}"
-          git add "${CHART_APP_VERSION_FILE}"
-        fi
+        # split by `,` and loop each CHART_APP_VERSION_FILE
+        IFS=',' read -ra CHART_APP_VERSION_FILES <<< "${CHART_APP_VERSION_FILE}"
+        for file in "${CHART_APP_VERSION_FILES[@]}"; do
+          if [[ -f "$file" ]] || [[ -L "$file" ]]; then
+            echo "Updating $file appVersion to ${NEXT_VERSION#v}"
+            yq eval --inplace ".appVersion = \"${NEXT_VERSION#v}\"" "$file"
+            git add "$file"
+          fi
+        done
 
-        if [[ -f "${PACKAGE_JSON_FILE}" ]] || [[ -L "${PACKAGE_JSON_FILE}" ]]; then
-          echo "Updating ${PACKAGE_JSON_FILE} version to ${NEXT_VERSION#v}"
-          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${PACKAGE_JSON_FILE}"
-          git add "${PACKAGE_JSON_FILE}"
-        fi
+        # split by `,` and loop each PACKAGE_JSON_FILE
+        IFS=',' read -ra PACKAGE_JSON_FILES <<< "${PACKAGE_JSON_FILE}"
+        for file in "${PACKAGE_JSON_FILES[@]}"; do
+          if [[ -f "$file" ]] || [[ -L "$file" ]]; then
+            echo "Updating $file version to ${NEXT_VERSION#v}"
+            yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "$file"
+            git add "$file"
+          fi
+        done
 
-        if [[ -f "${JEKYLL_CONFIG_FILE}" ]] || [[ -L "${JEKYLL_CONFIG_FILE}" ]]; then
-          echo "Updating ${JEKYLL_CONFIG_FILE} version to ${NEXT_VERSION#v}"
-          yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "${JEKYLL_CONFIG_FILE}"
-          git add "${JEKYLL_CONFIG_FILE}"
-        fi
+        # split by `,` and loop each JEKYLL_CONFIG_FILE
+        IFS=',' read -ra JEKYLL_CONFIG_FILES <<< "${JEKYLL_CONFIG_FILE}"
+        for file in "${JEKYLL_CONFIG_FILES[@]}"; do
+          if [[ -f "$file" ]] || [[ -L "$file" ]]; then
+            echo "Updating $file version to ${NEXT_VERSION#v}"
+            yq eval --inplace ".version = \"${NEXT_VERSION#v}\"" "$file"
+            git add "$file"
+          fi
+        done
         echo "::endgroup::"
 
     - name: Commit Release Changes
