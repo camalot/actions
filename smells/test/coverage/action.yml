@@ -29,10 +29,6 @@ runs:
       shell: bash
       run: |
         echo "DISTRIB_RELEASE=22.04" | sudo tee -a /etc/lsb-release
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        persist-credentials: false
 
     # set up Python (if needed)
     - name: Set up Python

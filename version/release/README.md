@@ -72,7 +72,7 @@ The following environment variables **SHOULD** be used instead of the correspond
 | --- | --- | --- |
 | `GIT_USER_NAME` | `github-actions[bot]` | Author name for the changelog commit. |
 | `GIT_USER_EMAIL` | `41898282+github-actions[bot]@users.noreply.github.com` | Author email for the changelog commit. |
-| `UPDATE_FILE_CHANGELOG` | `CHANGELOG.md` | Comma-separated paths (relative to repo root) of the changelog files to update. |
+| `UPDATE_FILE_CHANGELOG` | `CHANGELOG.md` | Path (relative to repo root) of the changelog files to update. |
 | `UPDATE_FILE_CHART_VERSION` | `chart/Chart.yaml` | Comma-separated paths to `Chart.yaml` files whose `version` field is updated to the new version. |
 | `UPDATE_FILE_CHART_APP_VERSION` | `` | Comma-separated paths to `Chart.yaml` files whose `appVersion` field is updated to the new version. |
 | `UPDATE_FILE_JEKYLL_CONFIG` | `docs/_config.yml` | Comma-separated paths to Jekyll `_config.yml` files whose `version` field is updated to the new version. |
