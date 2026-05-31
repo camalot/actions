@@ -268,8 +268,8 @@ runs:
 
         for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
           git tag "${tag}"
-          git push origin "${tag}"
         done
+        git push origin "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"
         echo "::endgroup::"
 
     - name: Create GitHub Release
