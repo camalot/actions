@@ -9,12 +9,27 @@ Generates the changelog via [git-cliff](https://git-cliff.org/), commits and pus
 3. Installs `git-cliff` globally
 4. Configures the git commit author using the supplied `git_user_name` / `git_user_email` inputs
 5. Renders the release notes for this version only (using `--unreleased --strip header`) and saves them to a temp file
-6. Prepends the new version section to `CHANGELOG.md` (or the configured `changelog_file`)
-7. Updates any version files that exist in the repo (`.version`, `Chart.yaml`, Jekyll `_config.yml`)
-8. Commits the changelog and version file changes and pushes to the current branch
-9. Deletes any existing local and remote copies of the three supplied tags, then recreates and pushes them pointing at the new commit (floating major and major.minor tags are moved automatically)
-10. Deletes any existing GitHub Release for the tag and creates a fresh one with the rendered notes
-11. Appends a summary table to `$GITHUB_STEP_SUMMARY`
+6. Captures the pre-release state (the prior remote targets of the floating `tag_major` / `tag_major_minor` tags) **before anything is mutated**, so the changes can be rolled back if a later step fails
+7. Prepends the new version section to `CHANGELOG.md` (or the configured `changelog_file`)
+8. Updates any version files that exist in the repo (`.version`, `Chart.yaml`, Jekyll `_config.yml`)
+9. Commits the changelog and version file changes and pushes to the current branch
+10. Deletes any existing local and remote copies of the three supplied tags, then recreates and pushes them pointing at the new commit (floating major and major.minor tags are moved automatically)
+11. Deletes any existing GitHub Release for the tag and creates a fresh one with the rendered notes
+12. If any of the above steps fail, [rolls back](#rollback-on-failure) the pushed changes in reverse order
+13. Appends a summary table to `$GITHUB_STEP_SUMMARY`
+
+## Rollback on Failure
+
+The action captures the relevant state **before** it mutates anything, then performs an **atomic rollback** if any step within the action fails. The rollback undoes whatever was already pushed, in reverse order:
+
+1. **GitHub Release** — deletes the release for `tag_major_minor_patch` (no-op if one was never created).
+2. **Tags** — only when tag mutation had begun:
+   - The patch tag (`tag_major_minor_patch`) is brand-new for this release, so it is **deleted**.
+   - The floating tags (`tag_major`, `tag_major_minor`) are **restored** to the remote targets captured before the release. If a floating tag did not exist before this release, it is **deleted** instead.
+3. **Release commit** — if the changelog/version commit was pushed, it is undone with `git revert` (not a force-push), so it works under branch protection rules that forbid rewriting history. The revert is committed and pushed to the current branch.
+
+> [!NOTE]
+> The rollback only fires on failures that occur **within this action**. It cannot detect a failure in a step that runs *after* this action in the calling workflow. Gate any such follow-up steps (e.g. a marketplace publish) on [`success()`](https://docs.github.com/en/actions/learn-github-actions/expressions#success) so they skip when the release fails.
 
 ## Requirements
 
