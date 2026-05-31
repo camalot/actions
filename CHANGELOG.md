@@ -1,4 +1,55 @@
 
+## [v1.3.3](https://github.com/camalot/actions/releases/tag/v1.3.3) - 2026-05-31
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Summary output for version cleaner -[@camalot](https://github.com/camalot)
+
+- Push all tags at once -[@camalot](https://github.com/camalot)
+
+
+### 💼 OTHER
+
+#### _GENERAL_
+
+- Merge branch 'main' of github.com:camalot/actions -[@camalot](https://github.com/camalot)
+
+- Main' of github.com:camalot/actions: -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- chore(release): update changelog for v1.3.2 -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+## 📈 Commit Statistics
+
+
+- `5` commits contributed to the release.
+- `0` days have passed between the first and last commit.
+- `2` commits parsed as conventional.
+- `0` linked issues detected in commits.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[5,1,0,2,0,0]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.3.2...v1.3.3
+
 ## [v1.3.2](https://github.com/camalot/actions/releases/tag/v1.3.2) - 2026-05-31
 
 ### 🐛 BUG FIXES
