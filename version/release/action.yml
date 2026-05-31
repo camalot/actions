@@ -278,21 +278,27 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
-        # Signal that tag mutation has begun, so rollback restores the floating
-        # tags even if a command below fails partway (writes to GITHUB_OUTPUT
-        # are captured even when the step later exits non-zero).
         echo "started=true" >> "${GITHUB_OUTPUT}"
-        echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_PATCH}"
-        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
-          # Delete locally and on the remote if it already exists, so the
-          # floating tags (vMAJOR, vMAJOR.MINOR) can be moved to the new commit.
+
+        # Only delete and move floating tags (Major and Minor)
+        echo "::group::Moving floating tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}"
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}"; do
           git tag -d "${tag}" 2>/dev/null || true
           git push origin ":refs/tags/${tag}" 2>/dev/null || true
         done
 
-        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
+        # Re-create floating tags at current HEAD
+        for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}"; do
           git tag "${tag}"
         done
+
+        # Create the immutable patch tag ONLY if it doesn't exist yet
+        # This prevents rewriting it if it is already locked
+        if ! git rev-parse "${TAG_MAJOR_MINOR_PATCH}" >/dev/null 2>&1; then
+          git tag "${TAG_MAJOR_MINOR_PATCH}"
+        fi
+
+        # Push everything up
         git push origin "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"
         echo "pushed=true" >> "${GITHUB_OUTPUT}"
         echo "::endgroup::"
