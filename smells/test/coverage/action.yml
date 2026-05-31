@@ -36,7 +36,6 @@ runs:
       with:
         architecture: x64
         python-version: '3.13'
-        cache: 'pip'
 
     - name: Generate Test & Coverage Reports
       if: ${{ always() }}
