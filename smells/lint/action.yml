@@ -32,11 +32,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
-      with:
-        fetch-depth: 0
-        persist-credentials: false
-
     # Load a .env file for Super-Linter, then fall back to inputs for any var not set by the file.
     - run: | # zizmor: ignore[github-env]
         echo "::group:: Load Super-Linter Environment Variables"

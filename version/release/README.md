@@ -101,9 +101,9 @@ jobs:
 
       - uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ steps.version.outputs.tag_major }}
-          tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ steps.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ steps.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ steps.version.outputs.tag_major_minor_patch }}{% endraw %}
 ```
 
 ---
@@ -113,9 +113,9 @@ jobs:
 ```yaml
       - uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ steps.version.outputs.tag_major }}
-          tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ steps.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ steps.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ steps.version.outputs.tag_major_minor_patch }}{% endraw %}
           prerelease: 'true'
 ```
 
@@ -126,9 +126,9 @@ jobs:
 ```yaml
       - uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ steps.version.outputs.tag_major }}
-          tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ steps.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ steps.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ steps.version.outputs.tag_major_minor_patch }}{% endraw %}
           draft: 'true'
 ```
 
@@ -139,9 +139,9 @@ jobs:
 ```yaml
       - uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ steps.version.outputs.tag_major }}
-          tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ steps.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ steps.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ steps.version.outputs.tag_major_minor_patch }}{% endraw %}
           changelog_file: 'docs/CHANGELOG.md'
           git_user_name:  'release-bot'
           git_user_email: 'release-bot@example.com'
@@ -156,9 +156,9 @@ jobs:
   version:
     runs-on: ubuntu-latest
     outputs:
-      tag_major:             ${{ steps.v.outputs.tag_major }}
-      tag_major_minor:       ${{ steps.v.outputs.tag_major_minor }}
-      tag_major_minor_patch: ${{ steps.v.outputs.tag_major_minor_patch }}
+      tag_major:             {% raw %}${{ steps.v.outputs.tag_major }}{% endraw %}
+      tag_major_minor:       {% raw %}${{ steps.v.outputs.tag_major_minor }}{% endraw %}
+      tag_major_minor_patch: {% raw %}${{ steps.v.outputs.tag_major_minor_patch }}{% endraw %}
     steps:
       - id: v
         uses: camalot/actions/version/get@v1
@@ -171,9 +171,9 @@ jobs:
     steps:
       - uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ needs.version.outputs.tag_major }}
-          tag_major_minor:       ${{ needs.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ needs.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ needs.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ needs.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ needs.version.outputs.tag_major_minor_patch }}{% endraw %}
 ```
 
 ---
@@ -184,9 +184,9 @@ jobs:
       - id: release
         uses: camalot/actions/version/release@v1
         with:
-          tag_major:             ${{ steps.version.outputs.tag_major }}
-          tag_major_minor:       ${{ steps.version.outputs.tag_major_minor }}
-          tag_major_minor_patch: ${{ steps.version.outputs.tag_major_minor_patch }}
+          tag_major:             {% raw %}${{ steps.version.outputs.tag_major }}{% endraw %}
+          tag_major_minor:       {% raw %}${{ steps.version.outputs.tag_major_minor }}{% endraw %}
+          tag_major_minor_patch: {% raw %}${{ steps.version.outputs.tag_major_minor_patch }}{% endraw %}
 
-      - run: echo "Published to ${{ steps.release.outputs.release_url }}"
+      - run: echo "Published to {% raw %}${{ steps.release.outputs.release_url }}{% endraw %}"
 ```

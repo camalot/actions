@@ -20,11 +20,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
-      with:
-        persist-credentials: false
-        fetch-depth: 0
-
     - name: Setup Pages
       id: pages
       uses: actions/configure-pages@v6
