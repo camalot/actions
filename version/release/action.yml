@@ -144,6 +144,25 @@ runs:
         cat "${notes_path}"
         echo "::endgroup::"
 
+    # Capture pre-release state so the rollback step can restore it if a later
+    # step in THIS action fails. Read-only; runs before anything is mutated.
+    - name: Capture pre-release state
+      id: rollback_state
+      shell: bash
+      env:
+        TAG_MAJOR: ${{ inputs.tag_major }}
+        TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        echo "::group::Capture pre-release state (for rollback)"
+        # Prior remote target of each floating tag (empty when it does not
+        # exist yet). The patch tag is brand-new, so it is not captured: on
+        # rollback it is simply deleted.
+        echo "tag_major_sha=$(git ls-remote origin "refs/tags/${TAG_MAJOR}" | awk 'NR==1{print $1}')" >> "${GITHUB_OUTPUT}"
+        echo "tag_major_minor_sha=$(git ls-remote origin "refs/tags/${TAG_MAJOR_MINOR}" | awk 'NR==1{print $1}')" >> "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
     # Prepend the same version section to the persistent CHANGELOG.md so the
     # file accumulates one entry per release (newest on top, matching the
     # repository's cliff.toml template).
@@ -251,6 +270,7 @@ runs:
 
     - name: Replace tags
       shell: bash
+      id: tags
       env:
         TAG_MAJOR: ${{ inputs.tag_major }}
         TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
@@ -258,6 +278,10 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
+        # Signal that tag mutation has begun, so rollback restores the floating
+        # tags even if a command below fails partway (writes to GITHUB_OUTPUT
+        # are captured even when the step later exits non-zero).
+        echo "started=true" >> "${GITHUB_OUTPUT}"
         echo "::group::Replace tags ${TAG_MAJOR}, ${TAG_MAJOR_MINOR}, ${TAG_MAJOR_MINOR_PATCH}"
         for tag in "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"; do
           # Delete locally and on the remote if it already exists, so the
@@ -270,6 +294,7 @@ runs:
           git tag "${tag}"
         done
         git push origin "${TAG_MAJOR}" "${TAG_MAJOR_MINOR}" "${TAG_MAJOR_MINOR_PATCH}"
+        echo "pushed=true" >> "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
     - name: Create GitHub Release
@@ -300,6 +325,64 @@ runs:
             "${flags[@]}"
         )"
         echo "url=${url}" >> "${GITHUB_OUTPUT}"
+        echo "::endgroup::"
+
+    # Atomic rollback: if any step ABOVE in this action failed, undo whatever
+    # was already pushed (GitHub Release, tags, commit) in reverse order.
+    # NOTE: only fires on failures WITHIN this action. It cannot detect a
+    # failure in a step that runs after this action in the calling workflow —
+    # gate those (e.g. marketplace publish) on success() and they will skip.
+    - name: Rollback on failure
+      if: ${{ failure() }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        TAG_MAJOR: ${{ inputs.tag_major }}
+        TAG_MAJOR_MINOR: ${{ inputs.tag_major_minor }}
+        NEXT_TAG: ${{ inputs.tag_major_minor_patch }}
+        ORIG_TAG_MAJOR_SHA: ${{ steps.rollback_state.outputs.tag_major_sha }}
+        ORIG_TAG_MAJOR_MINOR_SHA: ${{ steps.rollback_state.outputs.tag_major_minor_sha }}
+        COMMITTED: ${{ steps.commit.outputs.committed }}
+        TAGS_STARTED: ${{ steps.tags.outputs.started }}
+      run: |
+        set -uo pipefail
+        echo "::warning::Release failed — rolling back pushed changes"
+        echo "::group::Rollback"
+
+        # 1) Delete the GitHub Release (no-op if one was never created).
+        echo "Ensuring GitHub Release ${NEXT_TAG} is removed"
+        gh release delete "${NEXT_TAG}" --yes 2>/dev/null || true
+
+        # 2) Undo tags only if tag mutation began.
+        if [[ "${TAGS_STARTED}" == "true" ]]; then
+          # Patch tag is brand-new for this release: delete it.
+          echo "Deleting patch tag ${NEXT_TAG}"
+          git push origin ":refs/tags/${NEXT_TAG}" 2>/dev/null || true
+
+          # Floating tags were moved: restore to prior target, or delete if
+          # they did not exist before this release.
+          for pair in "${TAG_MAJOR}=${ORIG_TAG_MAJOR_SHA}" "${TAG_MAJOR_MINOR}=${ORIG_TAG_MAJOR_MINOR_SHA}"; do
+            tag="${pair%%=*}"
+            sha="${pair#*=}"
+            if [[ -n "${sha}" ]]; then
+              echo "Restoring ${tag} -> ${sha}"
+              git push origin --force "${sha}:refs/tags/${tag}" 2>/dev/null || true
+            else
+              echo "Deleting ${tag} (did not exist before release)"
+              git push origin ":refs/tags/${tag}" 2>/dev/null || true
+            fi
+          done
+        fi
+
+        # 3) Revert the release commit if it was pushed. A revert keeps history
+        #    and works under branch protection that forbids force-push.
+        #    Local HEAD is still the release commit (no further commits made).
+        if [[ "${COMMITTED}" == "true" ]]; then
+          echo "Reverting release commit on ${GITHUB_REF_NAME}"
+          git revert --no-edit HEAD
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+        fi
         echo "::endgroup::"
 
     - name: Summary
