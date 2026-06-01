@@ -1,4 +1,72 @@
 
+## [v1.5.0](https://github.com/camalot/actions/releases/tag/v1.5.0) - 2026-06-01
+
+### 🚀 FEATURES
+
+#### _GENERAL_
+
+- Ability to force next version via environment variable. -[@camalot](https://github.com/camalot)
+
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Removed pip cache to prevent unused warning -[@camalot](https://github.com/camalot)
+
+- Exclude the Patch Tag from Deletion and Re-push -[@camalot](https://github.com/camalot)
+
+- Lint error -[@camalot](https://github.com/camalot)
+
+
+### 💼 OTHER
+
+#### _GENERAL_
+
+- Merge branch 'main' of github.com:camalot/actions -[@camalot](https://github.com/camalot)
+
+- Main' of github.com:camalot/actions: -[@camalot](https://github.com/camalot)
+
+
+### 📚 DOCUMENTATION
+
+#### _GENERAL_
+
+- Update documentation for atomic rollback to version/release -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- chore(release): update changelog for v1.4.0 -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+## 📈 Commit Statistics
+
+
+- `8` commits contributed to the release.
+- `1` day has passed between the first and last commit.
+- `5` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `1` day  has passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[8,1,1,5,0,1]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.4.0...v1.5.0
+
 ## [v1.4.0](https://github.com/camalot/actions/releases/tag/v1.4.0) - 2026-05-31
 
 ### 🚀 FEATURES
