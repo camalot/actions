@@ -30,6 +30,24 @@ If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the
 | `enable_pr_comment` | No | `false` | When `true`, posts (or updates) a comment on the pull request with the version summary table. Has no effect on non-pull-request events. Can also be enabled by setting the `ENABLE_PR_COMMENT` environment variable to `'true'` at the job or workflow level. |
 | `token` | No | `github.token` | GitHub token used to post or update the PR comment. Only required when `enable_pr_comment` is `true`. |
 
+## Environment Variables
+
+| Variable | Description |
+| --- | --- |
+| `ENABLE_PR_COMMENT` | Set to `'true'` to enable PR comments without changing each action call (equivalent to `enable_pr_comment: 'true'`). |
+| `FORCE_NEXT_VERSION` | Pin the next version to an exact value instead of computing it via `git-cliff`. See [Force Next Version](#force-next-version) below. |
+
+## Force Next Version
+
+Setting the `FORCE_NEXT_VERSION` environment variable bypasses `git-cliff` and pins `next_version` to the specified value. All other guards still apply.
+
+**Requirements:**
+
+- Value must match `v?MAJOR.MINOR.PATCH` (e.g. `v1.12.2` or `1.12.2`)
+- The full `vMAJOR.MINOR.PATCH` tag must not already exist in the repository — if it does, the action fails with the same error as when `next_version` equals `current_version` and the tag is already present
+
+**Use case:** Skipping a version that cannot be used — for example, when a tag like `v1.12.1` is locked by GitHub and the next intended release must be `v1.12.2`.
+
 ## Outputs
 
 | Output | Example | Description |
@@ -209,6 +227,31 @@ jobs:
         run: |
           docker build -t myapp:${{ needs.version.outputs.tag }} .
 ```
+
+---
+
+### Force a specific next version
+
+Use `FORCE_NEXT_VERSION` when you need to skip a version — for example, if `v1.12.1` is locked and cannot be created, and the next release must be `v1.12.2`.
+
+```yaml
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_NEXT_VERSION: 'v1.12.2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        uses: camalot/actions/version/get@v1
+
+      - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
+```
+
+The value may include or omit the leading `v`. The action fails if the tag already exists in the repository.
 
 ---
 

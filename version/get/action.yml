@@ -109,6 +109,21 @@ runs:
         DEFAULT_WITH_V="v${DEFAULT_VERSION#v}"
         DEFAULT_PLAIN="${DEFAULT_VERSION#v}"
 
+        # FORCE_NEXT_VERSION override: skip git-cliff and pin the version directly.
+        # Must match v?MAJOR.MINOR.PATCH; the full patch tag must not already exist.
+        FORCED_VERSION=""
+        if [[ -n "${FORCE_NEXT_VERSION:-}" ]]; then
+          FORCED_VERSION="v${FORCE_NEXT_VERSION#v}"
+          if ! [[ "${FORCED_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::FORCE_NEXT_VERSION ('${FORCE_NEXT_VERSION}') does not match the required format v?MAJOR.MINOR.PATCH (e.g. v1.2.3 or 1.2.3)."
+            exit 1
+          fi
+          if git tag --list | grep -qFx "${FORCED_VERSION}"; then
+            echo "::error::FORCE_NEXT_VERSION (${FORCED_VERSION}) tag already exists. Remove the tag or choose a different version."
+            exit 1
+          fi
+        fi
+
         # Match only fully-qualified vMAJOR.MINOR.PATCH tags so that floating
         # tags (v1, v1.1) at the same commit are never returned as CURRENT_VERSION.
         # Without this, git describe may return v1 or v1.1 and git-cliff then
@@ -122,27 +137,31 @@ runs:
         fi
         CURRENT_PLAIN="${CURRENT_VERSION#v}"
 
-        # Scope git-cliff to exactly CURRENT_VERSION..HEAD so it is unaffected
-        # by floating tags that may sit at the same commit as CURRENT_VERSION.
-        # --offline prevents any GitHub/GitLab API calls.
-        # Normalize the output: git-cliff may return the version with or without
-        # the leading 'v' depending on its config; always canonicalize to 'v' form.
-        NEXT_RAW="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
-        NEXT_VERSION="v${NEXT_RAW#v}"
+        if [[ -n "${FORCED_VERSION}" ]]; then
+          NEXT_VERSION="${FORCED_VERSION}"
+        else
+          # Scope git-cliff to exactly CURRENT_VERSION..HEAD so it is unaffected
+          # by floating tags that may sit at the same commit as CURRENT_VERSION.
+          # --offline prevents any GitHub/GitLab API calls.
+          # Normalize the output: git-cliff may return the version with or without
+          # the leading 'v' depending on its config; always canonicalize to 'v' form.
+          NEXT_RAW="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
+          NEXT_VERSION="v${NEXT_RAW#v}"
 
-        # When git-cliff returns nothing (no bump-triggering commits in the range,
-        # empty range, or other non-fatal failure), fall back gracefully:
-        #   - Real tags exist → patch-bump CURRENT_VERSION (returning a version
-        #     lower than current would be wrong, and the default is unrelated).
-        #   - No tags at all  → use DEFAULT_VERSION (genuine first-release case).
-        if [[ "${NEXT_VERSION}" == "v" ]]; then
-          if [[ "${HAS_TAGS}" == "true" ]]; then
-            MAJOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f1)"
-            MINOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f2)"
-            PATCH_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f3)"
-            NEXT_VERSION="v${MAJOR_C}.${MINOR_C}.$((PATCH_C + 1))"
-          else
-            NEXT_VERSION="${DEFAULT_WITH_V}"
+          # When git-cliff returns nothing (no bump-triggering commits in the range,
+          # empty range, or other non-fatal failure), fall back gracefully:
+          #   - Real tags exist → patch-bump CURRENT_VERSION (returning a version
+          #     lower than current would be wrong, and the default is unrelated).
+          #   - No tags at all  → use DEFAULT_VERSION (genuine first-release case).
+          if [[ "${NEXT_VERSION}" == "v" ]]; then
+            if [[ "${HAS_TAGS}" == "true" ]]; then
+              MAJOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f1)"
+              MINOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f2)"
+              PATCH_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f3)"
+              NEXT_VERSION="v${MAJOR_C}.${MINOR_C}.$((PATCH_C + 1))"
+            else
+              NEXT_VERSION="${DEFAULT_WITH_V}"
+            fi
           fi
         fi
 
