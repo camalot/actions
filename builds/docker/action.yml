@@ -1,0 +1,73 @@
+---
+name: Docker Build and Push
+description: Build and Push Docker images
+inputs:
+  token:
+    description: >
+      GitHub token used to post or update the PR comment.
+    required: false
+    default: '${{ github.token }}'
+  context:
+    description: >
+      The build context for the Docker image.
+    required: false
+    default: '.'
+  dockerfile:
+    description: >
+      The Dockerfile to use for the build.
+    required: false
+    default: 'Dockerfile'
+  tags:
+    description: >
+      Comma-separated list of tags to apply to the built Docker image.
+    required: false
+    default: ''
+  prerelease:
+    description: >
+      Whether to mark the Docker image as prerelease.
+    required: false
+    default: 'false'
+outputs:
+  imageid:
+    description: The ID of the built Docker image.
+    value: ''
+  digest:
+    description: The digest of the built Docker image.
+    value: ''
+  metadata:
+    description: The metadata of the built Docker image.
+    value: ''
+###############
+# Environment Variables
+#   Support for multiple registries to push via Environment Variables
+#   IDENTIFIER is a unique identifier for the variable group
+#   - DBPA_USERNAME_IDENTIFIER=myuser
+#   - DBPA_PASSWORD_IDENTIFIER=mypassword
+#   - DBPA_REGISTRY_IDENTIFIER=myregistry.io
+#
+#   Build Args via Environment Variables
+#   IDENTIFIER is the key of the build argument
+#   - BUILD_ARGS_IDENTIFIER=mybuildarg
+#   - BUILD_ARGS_ANOTHER_IDENTIFIER=myotherbuildarg
+#
+#   Labels via Environment Variables
+#   IDENTIFIER is the key of the label
+#   - LABELS_IDENTIFIER=mylabel
+#   - LABELS_ANOTHER_IDENTIFIER=myotherlabel
+#
+###############
+runs:
+  using: composite
+  steps:
+    - name: Prepare Build Environment
+      shell: bash
+      run: |
+        echo "::group::Prepare Build Environment"
+        {
+          echo "IMAGE_ORG=${IMAGE_ORG,,}"
+          echo "IMAGE_REPO=${IMAGE_REPO,,}"
+        } << "$GITHUB_ENV"
+        echo "::endgroup::"
+      env:
+        IMAGE_ORG: ${{ github.repository_owner }}
+        IMAGE_REPO: ${{ github.event.repository.name }}
