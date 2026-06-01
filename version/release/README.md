@@ -24,8 +24,8 @@ The action captures the relevant state **before** it mutates anything, then perf
 
 1. **GitHub Release** — deletes the release for `tag_major_minor_patch` (no-op if one was never created).
 2. **Tags** — only when tag mutation had begun:
-   - The patch tag (`tag_major_minor_patch`) is brand-new for this release, so it is **deleted**.
-   - The floating tags (`tag_major`, `tag_major_minor`) are **restored** to the remote targets captured before the release. If a floating tag did not exist before this release, it is **deleted** instead.
+    - The patch tag (`tag_major_minor_patch`) is brand-new for this release, so it is **deleted**.
+    - The floating tags (`tag_major`, `tag_major_minor`) are **restored** to the remote targets captured before the release. If a floating tag did not exist before this release, it is **deleted** instead.
 3. **Release commit** — if the changelog/version commit was pushed, it is undone with `git revert` (not a force-push), so it works under branch protection rules that forbid rewriting history. The revert is committed and pushed to the current branch.
 
 > [!NOTE]
