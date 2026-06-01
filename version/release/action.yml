@@ -70,6 +70,9 @@ outputs:
   release_url:
     description: 'URL of the created GitHub Release.'
     value: ${{ steps.gh_release.outputs.url }}
+  release_tag:
+    description: 'Tag of the created GitHub Release (useful for passing to a subsequent "Publish Release" action).'
+    value: ${{ steps.gh_release.outputs.tag }}
 runs:
   using: "composite"
   steps:
@@ -322,6 +325,12 @@ runs:
         flags=()
         [[ "${PRERELEASE}" == "true" ]] && flags+=(--prerelease)
         [[ "${DRAFT}" == "true" ]] && flags+=(--draft)
+        # if RELEASE_FILES_GLOB is set, pass it as a glob pattern to include assets in the release
+        # e.g. "dist/*.zip" to include all zip files in the dist directory
+        # supports multiple patterns separated by space, e.g. "dist/*.zip dist/*.tar.gz"
+        if [[ -n "${RELEASE_FILES_GLOB:-}" ]]; then
+          flags+=("${RELEASE_FILES_GLOB}")
+        fi
 
         url="$(
           gh release create "${NEXT_TAG}" \
@@ -330,7 +339,11 @@ runs:
             --target "$(git rev-parse HEAD)" \
             "${flags[@]}"
         )"
-        echo "url=${url}" >> "${GITHUB_OUTPUT}"
+        {
+          echo "url=${url}"
+          # Extract the release ID from the URL for use in the publish step if needed.
+          echo "release_tag=${NEXT_TAG}"
+        } >> "${GITHUB_OUTPUT}"
         echo "::endgroup::"
 
     # Atomic rollback: if any step ABOVE in this action failed, undo whatever

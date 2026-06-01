@@ -92,6 +92,7 @@ The following environment variables **SHOULD** be used instead of the correspond
 | `UPDATE_FILE_CHART_APP_VERSION` | `` | Comma-separated paths to `Chart.yaml` files whose `appVersion` field is updated to the new version. |
 | `UPDATE_FILE_JEKYLL_CONFIG` | `docs/_config.yml` | Comma-separated paths to Jekyll `_config.yml` files whose `version` field is updated to the new version. |
 | `UPDATE_FILE_PACKAGE_JSON` | `package.json` | Comma-separated paths to `package.json` files whose `version` field is updated to the new version. |
+| `RELEASE_FILES_GLOB` | `` | Optional glob pattern(s) to include assets in the release, e.g. `dist/*.zip` to include all zip files in the dist directory. Supports multiple patterns separated by space, e.g. `dist/*.zip dist/*.tar.gz`. |
 
 ## Outputs
 
