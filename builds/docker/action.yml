@@ -67,6 +67,29 @@ runs:
           echo "IMAGE_ORG=${IMAGE_ORG,,}"
           echo "IMAGE_REPO=${IMAGE_REPO,,}"
         } << "$GITHUB_ENV"
+
+        {
+          # loop over environment variables that match: BUILD_ARGS_* and store in ".env" file
+          for var in ${!BUILD_ARGS_*}; do
+            echo "$var=${!var}"
+          done
+        } >> /tmp/build-args.env
+
+        {
+          # loop over environment variables that match: LABELS_* and store in ".env" file
+          for var in ${!LABELS_*}; do
+            echo "$var=${!var}"
+          done
+        } >> /tmp/labels.env
+
+        {
+          # find the registries we need to publish to and keep the identifiers
+          # write to a matrix that we can use to call the step
+          # DBPA_REGISTRY_IDENTIFIER where IDENTIFIER is what we need.
+          for var in ${!DBPA_REGISTRY_*}; do
+            echo "$var=${!var}"
+          done
+        } >> /tmp/registry-matrix
         echo "::endgroup::"
       env:
         IMAGE_ORG: ${{ github.repository_owner }}
