@@ -1,0 +1,49 @@
+---
+name: 'GitHub Latest Version'
+description: 'Get the latest version of a GitHub repository'
+
+inputs:
+  token:
+    description: 'GitHub token for authentication. Defaults to the built-in GITHUB_TOKEN.'
+    required: false
+    default: ${{ github.token }}
+  organization:
+    description: 'GitHub organization name'
+    required: true
+  repository:
+    description: 'GitHub repository name'
+    required: true
+
+outputs:
+  version:
+    description: 'The latest release version.'
+    value: ${{ steps.get-latest-version.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Authenticate gh CLI
+      shell: bash
+      run: gh auth login --with-token <<<"${GH_TOKEN}"
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+
+    - name: Get Latest Version
+      id: get-latest-version
+      shell: bash
+      run: |
+        latest_version=$(gh release view --repo "${organization}/${repository}" --json tagName -q .tagName 2>/dev/null || true)
+        # if no releases exist, fall back to the latest tag
+        if [[ -z "$latest_version" || "$latest_version" == "null" ]]; then
+          latest_version=$(gh api repos/${organization}/${repository}/tags --jq '.[0].name')
+        fi
+
+        # strip leading 'v' prefix if present
+        if [[ "$latest_version" == v* ]]; then
+          latest_version=${latest_version:1}
+        fi
+
+        echo "version=$latest_version" >>"$GITHUB_OUTPUT"
+      env:
+        organization: ${{ inputs.organization }}
+        repository: ${{ inputs.repository }}
