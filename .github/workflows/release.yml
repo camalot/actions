@@ -29,7 +29,7 @@ jobs:
     steps:
       # Required so the composite action under ./.github/actions/version/get is
       # available on disk; the action itself does its own full-history checkout.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -64,10 +64,14 @@ jobs:
       checks: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
+      - run: |
+          # ensure builds/docker/prepare-build.sh is executable
+          chmod +x builds/docker/prepare-build.sh
+
       - name: Lint Codebase
         uses: ./smells/lint
         with:
@@ -94,7 +98,7 @@ jobs:
       ignore_commit: ${{ steps.check-commit.outputs.ignore_commit }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -156,7 +160,7 @@ jobs:
       # Required so the composite action under ./.github/actions/version/release
       # is available on disk; the action itself does its own full-history
       # checkout with credentials.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -185,7 +189,7 @@ jobs:
       - lint
       - version
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false

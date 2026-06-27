@@ -34,7 +34,6 @@ Every input has a corresponding environment variable. When `super_linter_env_fil
 | --- | --- |
 | `token` | `GITHUB_TOKEN` (set automatically by GitHub Actions; used directly by Super-Linter and comment steps) |
 | `default_branch` | `DEFAULT_BRANCH` |
-| `delete_previous_comment` | `DELETE_PREVIOUS_COMMENT` |
 | `super_linter_env_file` | `SUPER_LINTER_ENV_FILE` (workflow-level env var; takes precedence over the input) |
 | `filter_regex_exclude` | `FILTER_REGEX_EXCLUDE` |
 | `validate_all_codebase` | `VALIDATE_ALL_CODEBASE` |
@@ -47,10 +46,13 @@ Every input has a corresponding environment variable. When `super_linter_env_fil
 | --- | --- | --- |
 | `token` | `github.token` | GitHub token used for authentication and PR comment management. Defaults to the built-in `GITHUB_TOKEN`. |
 | `default_branch` | _(auto-detected)_ | Branch to compare changed files against when `validate_all_codebase` is `false`. Override via `DEFAULT_BRANCH` in `super_linter_env_file`. |
-| `delete_previous_comment` | `true` | When `true`, deletes the previous Super-Linter summary comment on a PR before running, avoiding stale comments. Override via `DELETE_PREVIOUS_COMMENT` in `super_linter_env_file`. |
+| `delete_previous_comment` | `false` | DEPRECATED: When `true`, deletes the previous Super-Linter summary comment on a PR before running, avoiding stale comments. Override via `DELETE_PREVIOUS_COMMENT` in `super_linter_env_file`. |
 | `super_linter_env_file` | _(none)_ | Path to a `.env` file whose variables are loaded into Super-Linter's environment before it runs. Override via `SUPER_LINTER_ENV_FILE` workflow env var. |
 | `filter_regex_exclude` | `(\.devcontainer\|\.github/linters\|docs\|\.vscode)/\|.*/output/\|CHANGELOG\.md` | Regex pattern of files and directories to exclude from linting. Override via `FILTER_REGEX_EXCLUDE` in `super_linter_env_file`. |
 | `validate_all_codebase` | `false` | When `true`, lints the entire codebase instead of only files changed relative to `default_branch`. Override via `VALIDATE_ALL_CODEBASE` in `super_linter_env_file`. |
+
+> [!IMPORTANT]
+> The `delete_previous_comment` input is deprecated and will be removed in a future release. Setting `input.delete_previous_comment` to `true` will have no effect. Super-Linter now automatically updates existing comments instead of creating new ones, so stale comments are no longer an issue.
 
 ## Examples
 

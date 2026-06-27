@@ -277,6 +277,10 @@ def main() -> None:
         with action_path.open(encoding="utf-8") as fh:
             action_data = yaml.safe_load(fh)
 
+        if not isinstance(action_data, dict):
+            skipped.append((str(action_path.relative_to(REPO_ROOT)), "invalid action.yml"))
+            continue
+
         action_name = action_data.get("name") or display_name(leaf_slug, words)
         description = (action_data.get("description") or "").strip()
 
