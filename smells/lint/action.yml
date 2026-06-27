@@ -11,9 +11,9 @@ inputs:
     required: false
     default: ""
   delete_previous_comment:
-    description: "When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: true). Override via DELETE_PREVIOUS_COMMENT env var in super_linter_env_file."
+    description: "DEPRECATED: When 'true', delete the previous Super-Linter comment on pull requests before running the linter. This helps avoid confusion with stale comments. (default: false). Override via DELETE_PREVIOUS_COMMENT env var in super_linter_env_file."
     required: false
-    default: "true"
+    default: "false"
 
   super_linter_env_file:
     description: "Path to a .env file to load environment variables for Super-Linter (optional). Override via SUPER_LINTER_ENV_FILE workflow env var."
@@ -38,7 +38,6 @@ runs:
         filter_regex_set=false
         validate_all_codebase_set=false
         default_branch_set=false
-        delete_previous_comment_set=false
         if [[ -n "$SUPER_LINTER_ENV_FILE" && -f "$SUPER_LINTER_ENV_FILE" ]]; then
           echo "Loading environment variables from $SUPER_LINTER_ENV_FILE"
           while IFS= read -r line || [[ -n "$line" ]]; do
@@ -48,7 +47,6 @@ runs:
             [[ "$line" == FILTER_REGEX_EXCLUDE=* ]]       && filter_regex_set=true
             [[ "$line" == VALIDATE_ALL_CODEBASE=* ]]      && validate_all_codebase_set=true
             [[ "$line" == DEFAULT_BRANCH=* ]]             && default_branch_set=true
-            [[ "$line" == DELETE_PREVIOUS_COMMENT=* ]]    && delete_previous_comment_set=true
           done < "$SUPER_LINTER_ENV_FILE"
         else
           echo "No .env file provided for Super-Linter, proceeding without loading additional environment variables." >&2
@@ -62,9 +60,6 @@ runs:
         if [[ "$default_branch_set" == false && -n "${INPUT_DEFAULT_BRANCH}" ]]; then
           echo "DEFAULT_BRANCH=${INPUT_DEFAULT_BRANCH}" >> "$GITHUB_ENV"
         fi
-        if [[ "$delete_previous_comment_set" == false ]]; then
-          echo "DELETE_PREVIOUS_COMMENT=${INPUT_DELETE_PREVIOUS_COMMENT}" >> "$GITHUB_ENV"
-        fi
         echo "::endgroup::"
       shell: bash
       env:
@@ -72,32 +67,6 @@ runs:
         INPUT_FILTER_REGEX_EXCLUDE: ${{ inputs.filter_regex_exclude }}
         INPUT_VALIDATE_ALL_CODEBASE: ${{ inputs.validate_all_codebase }}
         INPUT_DEFAULT_BRANCH: ${{ inputs.default_branch }}
-        INPUT_DELETE_PREVIOUS_COMMENT: ${{ inputs.delete_previous_comment }}
-
-    # because super-linter does not currently edit their existing comment, we need to find and delete it before
-    # running the linter to avoid confusion with stale comments
-    - name: Find existing Super-Linter comment
-      id: find_comment
-      if: github.event_name == 'pull_request'
-      uses: peter-evans/find-comment@v4
-      with:
-        issue-number: ${{ github.event.pull_request.number }}
-        body-includes: "# Super-linter summary"
-        token: ${{ inputs.token }}
-
-    - name: Delete existing Super-Linter comment
-      if: github.event_name == 'pull_request' && env.DELETE_PREVIOUS_COMMENT == 'true' && steps.find_comment.outputs.comment-id != ''
-      uses: actions/github-script@v9
-      env:
-        COMMENT_ID: ${{ steps.find_comment.outputs.comment-id }}
-      with:
-        github-token: ${{ inputs.token }}
-        script: |
-          github.rest.issues.deleteComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            comment_id: parseInt(process.env.COMMENT_ID)
-          })
 
     - name: Super-Linter
       uses: super-linter/super-linter/slim@v8
@@ -107,5 +76,6 @@ runs:
         SHELLCHECK_OPTS: -x
         VALIDATE_ALL_CODEBASE: ${{ env.VALIDATE_ALL_CODEBASE }}
         DEFAULT_BRANCH: ${{ env.DEFAULT_BRANCH }}
-        IGNORE_GITIGNORED_FILES: true
+        # disabled as it breaks JSCPD
+        IGNORE_GITIGNORED_FILES: false
         FILTER_REGEX_EXCLUDE: ${{ env.FILTER_REGEX_EXCLUDE }}
