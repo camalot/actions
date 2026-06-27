@@ -12,67 +12,67 @@ PR_COMMENT_MARKER="<!-- docker-build-tags -->"
 # SHIFT the --release flag out of the way for future arg parsing
 while [[ "$1" == --* ]]; do
   case "$1" in
-    --release)
-      PREP_RELEASE_FLAG=true
-      shift
-      ;;
-    --beta)
-      PREP_RELEASE_FLAG=false
-      shift
-      ;;
-    --version)
-      PREP_VERSION="$2"
-      shift 2
-      ;;
-    --tag=*)
-      # add individual tag
-      PREP_TAGS+=("${1#--tag=}")
-      shift
-      ;;
-    --tag)
-      PREP_TAGS+=("$2")
-      shift 2
-      ;;
-    --tags=*)
-      IFS=',' read -ra TMP_TAGS <<< "${1#--tags=}"
-      PREP_TAGS+=("${TMP_TAGS[@]}")
-      shift
-      ;;
-    --tags)
-      IFS=',' read -ra TMP_TAGS <<< "$2"
-      PREP_TAGS+=("${TMP_TAGS[@]}")
-      shift 2
-      ;;
-    --registries=*)
-      IFS=',' read -ra TMP_REGISTRIES <<< "${1#--registries=}"
-      PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
-      shift
-      ;;
-    --registries)
-      IFS=',' read -ra TMP_REGISTRIES <<< "$2"
-      PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
-      shift 2
-      ;;
-    --registry=*)
-      PREP_REGISTRIES+=("${1#--registry=}")
-      shift
-      ;;
-    --registry)
-      PREP_REGISTRIES+=("$2")
-      shift 2
-      ;;
-    --pr-comment-marker=*)
-      PR_COMMENT_MARKER="${1#--pr-comment-marker=}"
-      shift
-      ;;
-    --pr-comment-marker)
-      PR_COMMENT_MARKER="$2"
-      shift 2
-      ;;
-    *)
-      echo "Found Unknown flag: $1" >&2
-      shift
-      ;;
+  --release)
+    PREP_RELEASE_FLAG=true
+    shift
+    ;;
+  --beta)
+    PREP_RELEASE_FLAG=false
+    shift
+    ;;
+  --version)
+    PREP_VERSION="$2"
+    shift 2
+    ;;
+  --tag=*)
+    # add individual tag
+    PREP_TAGS+=("${1#--tag=}")
+    shift
+    ;;
+  --tag)
+    PREP_TAGS+=("$2")
+    shift 2
+    ;;
+  --tags=*)
+    IFS=',' read -ra TMP_TAGS <<< "${1#--tags=}"
+    PREP_TAGS+=("${TMP_TAGS[@]}")
+    shift
+    ;;
+  --tags)
+    IFS=',' read -ra TMP_TAGS <<< "$2"
+    PREP_TAGS+=("${TMP_TAGS[@]}")
+    shift 2
+    ;;
+  --registries=*)
+    IFS=',' read -ra TMP_REGISTRIES <<< "${1#--registries=}"
+    PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
+    shift
+    ;;
+  --registries)
+    IFS=',' read -ra TMP_REGISTRIES <<< "$2"
+    PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
+    shift 2
+    ;;
+  --registry=*)
+    PREP_REGISTRIES+=("${1#--registry=}")
+    shift
+    ;;
+  --registry)
+    PREP_REGISTRIES+=("$2")
+    shift 2
+    ;;
+  --pr-comment-marker=*)
+    PR_COMMENT_MARKER="${1#--pr-comment-marker=}"
+    shift
+    ;;
+  --pr-comment-marker)
+    PR_COMMENT_MARKER="$2"
+    shift 2
+    ;;
+  *)
+    echo "Found Unknown flag: $1" >&2
+    shift
+    ;;
   esac
 done
 
@@ -137,9 +137,9 @@ done
 {
   echo "BUILD_TAGS=${TAGZ}"
   echo "BUILD_DATE=${BUILD_DATEZ}"
-} >> "$GITHUB_ENV"
+} >>"$GITHUB_ENV"
 
-echo "pr_comment_marker=${PR_COMMENT_MARKER}" >> "$GITHUB_OUTPUT"
+echo "pr_comment_marker=${PR_COMMENT_MARKER}" >>"$GITHUB_OUTPUT"
 
 # Generate PR comment markdown — repository:tag table
 {
@@ -148,14 +148,14 @@ echo "pr_comment_marker=${PR_COMMENT_MARKER}" >> "$GITHUB_OUTPUT"
   echo ""
   echo "| Repository | Tag |"
   echo "| --- | --- |"
-  IFS=',' read -ra ALL_TAGS <<< "${TAGZ}"
+  IFS=',' read -ra ALL_TAGS <<<"${TAGZ}"
   for full_tag in "${ALL_TAGS[@]}"; do
     repo="${full_tag%:*}"
     tag="${full_tag##*:}"
     echo "| \`${repo}\` | \`${tag}\` |"
   done
   echo ""
-} > /tmp/docker-tags-comment.md
+} >/tmp/docker-tags-comment.md
 
 # summary output
 {
@@ -181,13 +181,13 @@ echo "pr_comment_marker=${PR_COMMENT_MARKER}" >> "$GITHUB_OUTPUT"
   echo ""
   echo "| Repository | Tag |"
   echo "| --- | --- |"
-  IFS=',' read -ra ALL_TAGS <<< "${TAGZ}"
+  IFS=',' read -ra ALL_TAGS <<<"${TAGZ}"
   for full_tag in "${ALL_TAGS[@]}"; do
     repo="${full_tag%:*}"
     tag="${full_tag##*:}"
     echo "| \`${repo}\` | \`${tag}\` |"
   done
   echo ""
-} >> "$GITHUB_STEP_SUMMARY"
+} >>"$GITHUB_STEP_SUMMARY"
 
 echo "::endgroup::"
