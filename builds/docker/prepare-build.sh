@@ -34,7 +34,7 @@ while [[ "$1" == --* ]]; do
     shift 2
     ;;
   --tags=*)
-    IFS=',' read -ra TMP_TAGS <<< "${1#--tags=}"
+    IFS=',' read -ra TMP_TAGS <<<"${1#--tags=}"
     PREP_TAGS+=("${TMP_TAGS[@]}")
     shift
     ;;
@@ -44,12 +44,12 @@ while [[ "$1" == --* ]]; do
     shift 2
     ;;
   --registries=*)
-    IFS=',' read -ra TMP_REGISTRIES <<< "${1#--registries=}"
+    IFS=',' read -ra TMP_REGISTRIES <<<"${1#--registries=}"
     PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
     shift
     ;;
   --registries)
-    IFS=',' read -ra TMP_REGISTRIES <<< "$2"
+    IFS=',' read -ra TMP_REGISTRIES <<<"$2"
     PREP_REGISTRIES+=("${TMP_REGISTRIES[@]}")
     shift 2
     ;;
