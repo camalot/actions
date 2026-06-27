@@ -39,7 +39,7 @@ while [[ "$1" == --* ]]; do
     shift
     ;;
   --tags)
-    IFS=',' read -ra TMP_TAGS <<< "$2"
+    IFS=',' read -ra TMP_TAGS <<<"$2"
     PREP_TAGS+=("${TMP_TAGS[@]}")
     shift 2
     ;;
