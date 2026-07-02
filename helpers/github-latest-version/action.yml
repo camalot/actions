@@ -22,11 +22,6 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Authenticate gh CLI
-      shell: bash
-      run: gh auth login --with-token <<<"${GH_TOKEN}"
-      env:
-        GH_TOKEN: ${{ inputs.token }}
 
     - name: Get Latest Version
       id: get-latest-version
@@ -47,3 +42,4 @@ runs:
       env:
         organization: ${{ inputs.organization }}
         repository: ${{ inputs.repository }}
+        GH_TOKEN: ${{ inputs.token }}
