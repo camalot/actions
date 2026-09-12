@@ -1,0 +1,153 @@
+---
+name: "Checksum Generation"
+description: "Generates a checksum file for CI pipeline assets."
+inputs:
+  assets:
+    description: >
+      Glob pattern(s) of local files to checksum, one per line (e.g. "dist/*.zip").
+      Supports ** for recursive matching.
+    default: "*"
+    required: true
+  algorithm:
+    description: "The algorithm to use for generating the checksum. One of: sha256, sha384, sha512, sha1, md5."
+    default: "sha256"
+    required: false
+  checksum-file:
+    description: "The file to which the generated checksum will be written."
+    default: "checksum.txt"
+    required: false
+  download-artifacts:
+    description: "Whether to also download artifacts uploaded (via actions/upload-artifact) elsewhere in the current workflow run and include them in the checksum."
+    default: "false"
+    required: false
+  artifacts-path:
+    description: "Directory to download workflow run artifacts into. Only used when download-artifacts is 'true'."
+    default: "artifacts"
+    required: false
+  artifact-pattern:
+    description: "Glob pattern filtering which workflow run artifacts to download. Only used when download-artifacts is 'true'."
+    default: "*"
+    required: false
+  run-id:
+    description: "The workflow run ID to download artifacts from. Only used when download-artifacts is 'true'."
+    default: ${{ github.run_id }}
+    required: false
+  token:
+    description: "GitHub token used to download workflow run artifacts. Only used when download-artifacts is 'true'."
+    default: ${{ github.token }}
+    required: false
+
+outputs:
+  checksum-file:
+    description: "Path to the generated checksum file."
+    value: ${{ steps.checksum.outputs.checksum-file }}
+  count:
+    description: "Number of assets checksummed."
+    value: ${{ steps.checksum.outputs.count }}
+
+runs:
+  using: composite
+  steps:
+
+    - name: Validate algorithm
+      id: validate
+      shell: bash
+      env:
+        ALGORITHM: ${{ inputs.algorithm }}
+      run: |
+        set -euo pipefail
+        algorithm="${ALGORITHM,,}"
+        case "$algorithm" in
+          sha256|sha384|sha512|sha1|md5) ;;
+          *)
+            echo "::error::Unsupported algorithm '$algorithm'. Must be one of: sha256, sha384, sha512, sha1, md5."
+            exit 1
+            ;;
+        esac
+        if ! command -v "${algorithm}sum" >/dev/null 2>&1; then
+          echo "::error::Required tool '${algorithm}sum' was not found on the runner."
+          exit 1
+        fi
+
+    - name: Download workflow run artifacts
+      if: inputs.download-artifacts == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GH_REPO: ${{ github.repository }}
+        RUN_ID: ${{ inputs.run-id }}
+        ARTIFACTS_PATH: ${{ inputs.artifacts-path }}
+        ARTIFACT_PATTERN: ${{ inputs.artifact-pattern }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$ARTIFACTS_PATH"
+        args=(--dir "$ARTIFACTS_PATH" --repo "$GH_REPO")
+        if [[ -n "$ARTIFACT_PATTERN" && "$ARTIFACT_PATTERN" != "*" ]]; then
+          args+=(--pattern "$ARTIFACT_PATTERN")
+        fi
+        gh run download "$RUN_ID" "${args[@]}"
+
+    - name: Generate checksums
+      id: checksum
+      shell: bash
+      env:
+        ASSETS: ${{ inputs.assets }}
+        ALGORITHM: ${{ inputs.algorithm }}
+        CHECKSUM_FILE: ${{ inputs.checksum-file }}
+        DOWNLOAD_ARTIFACTS: ${{ inputs.download-artifacts }}
+        ARTIFACTS_PATH: ${{ inputs.artifacts-path }}
+      run: |
+        set -euo pipefail
+        shopt -s nullglob globstar
+        algorithm="${ALGORITHM,,}"
+        rm -f "$CHECKSUM_FILE"
+
+        declare -A seen=()
+        files=()
+
+        while IFS= read -r pattern; do
+          [[ -z "$pattern" ]] && continue
+          for f in $pattern; do
+            [[ -f "$f" ]] || continue
+            real="$(realpath "$f")"
+            if [[ -z "${seen[$real]:-}" ]]; then
+              seen[$real]=1
+              files+=("$f")
+            fi
+          done
+        done <<< "$ASSETS"
+
+        if [[ "$DOWNLOAD_ARTIFACTS" == "true" ]]; then
+          while IFS= read -r -d '' f; do
+            real="$(realpath "$f")"
+            if [[ -z "${seen[$real]:-}" ]]; then
+              seen[$real]=1
+              files+=("$f")
+            fi
+          done < <(find "$ARTIFACTS_PATH" -type f -print0 | sort -z)
+        fi
+
+        if [[ ${#files[@]} -eq 0 ]]; then
+          echo "::error::No assets matched. Checked pattern(s) in 'assets' input$( [[ "$DOWNLOAD_ARTIFACTS" == "true" ]] && echo " and downloaded artifacts in '$ARTIFACTS_PATH'" )."
+          exit 1
+        fi
+
+        for f in "${files[@]}"; do
+          dir="$(dirname "$f")"
+          base="$(basename "$f")"
+          (cd "$dir" && "${algorithm}sum" --text "$base") >> "$CHECKSUM_FILE"
+        done
+
+        count="${#files[@]}"
+        echo "checksum-file=$CHECKSUM_FILE" >> "$GITHUB_OUTPUT"
+        echo "count=$count" >> "$GITHUB_OUTPUT"
+
+        {
+          echo "### Checksums ($algorithm)"
+          echo ""
+          echo "| Checksum | Asset |"
+          echo "| --- | --- |"
+          while read -r hash name; do
+            echo "| \`$hash\` | $name |"
+          done < "$CHECKSUM_FILE"
+        } >> "$GITHUB_STEP_SUMMARY"

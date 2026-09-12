@@ -1,0 +1,93 @@
+---
+name: "SBOM Generation"
+description: "Generates a Software Bill of Materials (SBOM) using Syft (via anchore/sbom-action) for a directory, a single file/archive, or a container image."
+inputs:
+  path:
+    description: "A path on the filesystem to scan. Mutually exclusive with file and image."
+    default: "."
+    required: false
+  file:
+    description: "A file (e.g. an archive) on the filesystem to scan. Mutually exclusive with path and image."
+    required: false
+  image:
+    description: "A container image to scan. Mutually exclusive with path and file."
+    required: false
+  registry-username:
+    description: "Registry username to use when authenticating to an external registry (image scans only)."
+    required: false
+  registry-password:
+    description: "Registry password to use when authenticating to an external registry (image scans only)."
+    required: false
+  format:
+    description: "The SBOM format to export. One of: spdx, spdx-json, cyclonedx, cyclonedx-json."
+    default: "spdx-json"
+    required: false
+  output-file:
+    description: "File location to write the resulting SBOM. Defaults to 'sbom.json' so it can be chained into later steps (e.g. the checksum action)."
+    required: false
+  artifact-name:
+    description: "Name to use for the SBOM workflow artifact. Required if using this action more than once in a matrix build."
+    required: false
+  syft-version:
+    description: "The version of Syft to use."
+    required: false
+  dependency-snapshot:
+    description: "Upload the SBOM to the GitHub Dependency submission API."
+    default: "false"
+    required: false
+  upload-artifact:
+    description: "Upload the SBOM as a workflow artifact."
+    default: "true"
+    required: false
+  upload-artifact-retention:
+    description: "Retention policy (in days) for the uploaded workflow artifact. 0 uses the repository default."
+    default: "0"
+    required: false
+  upload-release-assets:
+    description: "Upload the SBOM as a release asset when run during a GitHub release."
+    default: "true"
+    required: false
+  config:
+    description: "Syft configuration file to use."
+    required: false
+  token:
+    description: "GitHub token used for artifact/release uploads and dependency snapshot submission."
+    default: ${{ github.token }}
+    required: false
+
+outputs:
+  sbom-file:
+    description: "Path to the generated SBOM file."
+    value: ${{ steps.resolve.outputs.output-file }}
+
+runs:
+  using: composite
+  steps:
+
+    - name: Resolve output file
+      id: resolve
+      shell: bash
+      env:
+        OUTPUT_FILE: ${{ inputs.output-file }}
+      run: |
+        set -euo pipefail
+        echo "output-file=${OUTPUT_FILE:-sbom.json}" >> "$GITHUB_OUTPUT"
+
+    - name: Run Syft
+      uses: anchore/sbom-action@v0
+      with:
+        path: ${{ inputs.path }}
+        file: ${{ inputs.file }}
+        image: ${{ inputs.image }}
+        registry-username: ${{ inputs.registry-username }}
+        registry-password: ${{ inputs.registry-password }}
+        format: ${{ inputs.format }}
+        output-file: ${{ steps.resolve.outputs.output-file }}
+        artifact-name: ${{ inputs.artifact-name }}
+        syft-version: ${{ inputs.syft-version }}
+        dependency-snapshot: ${{ inputs.dependency-snapshot }}
+        upload-artifact: ${{ inputs.upload-artifact }}
+        upload-artifact-retention: ${{ inputs.upload-artifact-retention }}
+        upload-release-assets: ${{ inputs.upload-release-assets }}
+        config: ${{ inputs.config }}
+        github-token: ${{ inputs.token }}
