@@ -737,10 +737,7 @@ Examples:
     cov.add_argument("--no-lcov", action="store_true", help="Disable LCOV coverage report")
 
     cov.add_argument(
-        "--go-cover",
-        default="coverage.out",
-        metavar="PATH",
-        help="Path to Go coverage profile (default: coverage.out)",
+        "--go-cover", default="coverage.out", metavar="PATH", help="Path to Go coverage profile (default: coverage.out)"
     )
     cov.add_argument("--no-go-cover", action="store_true", help="Disable Go coverage profile report")
 
@@ -837,9 +834,7 @@ def main() -> int:
                 print(f"warning: no coverage records found in {report_path}", file=sys.stderr)
                 continue
             summary_sections.append(src.summary_formatter(coverage, args.title))  # type: ignore[call-arg]
-            comment_sections.append(
-                src.comment_formatter(coverage, args.run_url, args.title)  # type: ignore[call-arg]
-            )
+            comment_sections.append(src.comment_formatter(coverage, args.run_url, args.title))  # type: ignore[call-arg]
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(f"warning: failed to parse {src.name} report at {report_path}: {exc}", file=sys.stderr)
