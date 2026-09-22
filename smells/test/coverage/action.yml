@@ -72,7 +72,10 @@ runs:
     - name: Write Step Summary
       if: ${{ always() }}
       shell: bash
-      run: cat reports/coverage/step-summary.md >> "$GITHUB_STEP_SUMMARY"
+      run: |
+        if [ -f reports/coverage/step-summary.md ]; then
+          cat reports/coverage/step-summary.md >> "$GITHUB_STEP_SUMMARY"
+        fi
 
     # ── PR comment (only on pull_request events) ────────────────────────
     - name: Find existing Coverage Report comment
