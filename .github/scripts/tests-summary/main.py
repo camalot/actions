@@ -6,6 +6,7 @@ Supported report formats
 ------------------------
 Coverage:
     * LCOV          --lcov PATH          (default: lcov.info)
+    * Go cover      --go-cover PATH      (default: coverage.out)
 
 Test results:
     * JUnit XML     --junit PATH         (default: junit.xml)
@@ -24,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
@@ -212,6 +214,44 @@ class LcovParser(CoverageParser):
                     current.functions_hit = int(line[4:])
 
         return CoverageSummary(files=files, source="lcov")
+
+
+class GoCoverParser(CoverageParser):
+    """Parse a Go coverage profile, as produced by ``go test -coverprofile=FILE``.
+
+    Each line after the ``mode:`` header has the form::
+
+        <file>:<start line>.<start col>,<end line>.<end col> <num statements> <count>
+
+    Go coverage is statement-based rather than line-based; statement counts
+    are treated as the line-coverage totals since Go does not report branch
+    or function coverage.
+    """
+
+    _LINE_RE = re.compile(r"^(?P<file>.+):\d+\.\d+,\d+\.\d+ (?P<stmts>\d+) (?P<count>\d+)$")
+
+    def parse(self, path: Path) -> CoverageSummary:
+        totals: dict[str, FileRecord] = {}
+
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("mode:"):
+                continue
+
+            match = self._LINE_RE.match(line)
+            if not match:
+                continue
+
+            file_path = match.group("file")
+            stmts = int(match.group("stmts"))
+            count = int(match.group("count"))
+
+            record = totals.setdefault(file_path, FileRecord(path=file_path))
+            record.lines_found += stmts
+            if count > 0:
+                record.lines_hit += stmts
+
+        return CoverageSummary(files=list(totals.values()), source="go-cover")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -414,7 +454,12 @@ def _write_output(content: str, dest: str) -> None:
 # Test-results formatters
 # ══════════════════════════════════════════════════════════════════════════════
 
-_SOURCE_LABELS: dict[str, str] = {"junit": "JUnit XML", "pytest-json": "pytest JSON report", "lcov": "LCOV"}
+_SOURCE_LABELS: dict[str, str] = {
+    "junit": "JUnit XML",
+    "pytest-json": "pytest JSON report",
+    "lcov": "LCOV",
+    "go-cover": "Go coverage profile",
+}
 
 
 def format_test_results_summary(results: TestResults) -> str:
@@ -546,13 +591,13 @@ def format_coverage_summary(summary: CoverageSummary) -> str:
     return "\n".join(lines)
 
 
-def format_coverage_comment(summary: CoverageSummary, run_url: str = "") -> str:
+def format_coverage_comment(summary: CoverageSummary, run_url: str = "", header_comment: str = "<!-- coverage-report -->") -> str:
     total = summary.total
     detail_link = f" · [Full report →]({run_url})" if run_url else ""
     worst = sorted(summary.files, key=lambda x: x.line_pct)[:5]
 
     lines = [
-        "<!-- coverage-report -->",
+        f"{header_comment}",
         f"## {_status_icon(total.line_pct)} Coverage Summary{detail_link}",
         "",
         "| Lines | Branches | Functions |",
@@ -620,7 +665,14 @@ COVERAGE_SOURCES: list[CoverageSource] = [
         parser=LcovParser(),
         summary_formatter=format_coverage_summary,
         comment_formatter=format_coverage_comment,
-    )
+    ),
+    CoverageSource(
+        name="go-cover",
+        default_path="coverage.out",
+        parser=GoCoverParser(),
+        summary_formatter=format_coverage_summary,
+        comment_formatter=format_coverage_comment,
+    ),
 ]
 
 TEST_SOURCES: list[TestSource] = [
@@ -655,7 +707,7 @@ Each report source is optional.  A file is silently skipped when it does not
 exist, so you only need to supply the flags that apply to your project.
 
 Examples:
-    # Use all defaults (looks for lcov.info, junit.xml, .report.json):
+    # Use all defaults (looks for lcov.info, coverage.out, junit.xml, .report.json):
     python main.py --summary-out "$GITHUB_STEP_SUMMARY"
 
     # Explicit paths + PR comment output:
@@ -665,6 +717,7 @@ Examples:
         --summary-out reports/step-summary.md \\
         --comment-out reports/pr-comment.md \\
         --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        --header-comment "<!-- coverage-report -->"
 
     # Coverage only, no test results:
     python main.py --no-junit --no-pytest-json --lcov coverage/lcov.info
@@ -676,6 +729,14 @@ Examples:
         "--lcov", default="lcov.info", metavar="PATH", help="Path to LCOV coverage file (default: lcov.info)"
     )
     cov.add_argument("--no-lcov", action="store_true", help="Disable LCOV coverage report")
+
+    cov.add_argument(
+        "--go-cover",
+        default="coverage.out",
+        metavar="PATH",
+        help="Path to Go coverage profile (default: coverage.out)",
+    )
+    cov.add_argument("--no-go-cover", action="store_true", help="Disable Go coverage profile report")
 
     tst = parser.add_argument_group("Test result sources")
     tst.add_argument(
@@ -706,6 +767,13 @@ Examples:
         default="",
         metavar="URL",
         help="GitHub Actions run URL to embed as a hyperlink in PR comment output",
+    )
+
+    out.add_argument(
+        "--header-comment",
+        default="<!-- coverage-report -->",
+        metavar="COMMENT",
+        help="Header comment to include in the coverage report (default: <!-- coverage-report -->)",
     )
 
     return parser
@@ -763,7 +831,9 @@ def main() -> int:
                 print(f"warning: no coverage records found in {report_path}", file=sys.stderr)
                 continue
             summary_sections.append(src.summary_formatter(coverage))  # type: ignore[call-arg]
-            comment_sections.append(src.comment_formatter(coverage, args.run_url))  # type: ignore[call-arg]
+            comment_sections.append(
+                src.comment_formatter(coverage, args.run_url, args.header_comment)  # type: ignore[call-arg]
+            )
             found_any = True
         except Exception as exc:  # noqa: BLE001
             print(f"warning: failed to parse {src.name} report at {report_path}: {exc}", file=sys.stderr)

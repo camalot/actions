@@ -9,18 +9,28 @@ inputs:
 
   lcov-file:
     description: "Path to the lcov.info file"
-    required: true
+    required: false
     default: "reports/coverage/lcov.info"
+
+  go-cover-file:
+    description: "Path to the Go coverage profile file"
+    required: false
+    default: "coverage.out"
 
   junit-file:
     description: "Path to the JUnit XML file"
-    required: true
+    required: false
     default: "reports/test/junit.xml"
 
   pytest-json-file:
     description: "Path to the pytest JSON report file"
-    required: true
+    required: false
     default: "reports/test/.report.json"
+
+  header-comment:
+    description: "Header comment to include in the coverage report"
+    required: false
+    default: "<!-- coverage-report -->"
 
 runs:
   using: "composite"
@@ -44,14 +54,17 @@ runs:
         TEST_LCOV_FILE: ${{ inputs.lcov-file }}
         TEST_JUNIT_FILE: ${{ inputs.junit-file }}
         TEST_PYTEST_JSON_FILE: ${{ inputs.pytest-json-file }}
+        TEST_GO_COVER_FILE: ${{ inputs.go-cover-file }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         python "${GITHUB_ACTION_PATH}/../../../.github/scripts/tests-summary/main.py" \
           --lcov "$TEST_LCOV_FILE" \
+          --go-cover "$TEST_GO_COVER_FILE" \
           --junit "$TEST_JUNIT_FILE" \
           --pytest-json "$TEST_PYTEST_JSON_FILE" \
           --summary-out reports/coverage/step-summary.md \
           --comment-out reports/coverage/pr-comment.md \
+          --header-comment "$INPUT_HEADER_COMMENT" \
           --run-url "$RUN_URL"
 
     - name: Write Step Summary
@@ -66,7 +79,7 @@ runs:
       id: find_comment
       with:
         issue-number: ${{ github.event.pull_request.number }}
-        body-includes: "<!-- coverage-report -->"
+        body-includes: ${{ inputs.header-comment }}
         token: ${{ inputs.token }}
 
     - name: Post or Update PR comment

@@ -5,6 +5,9 @@ Collects pre-generated test and coverage report files, runs the
 Markdown output, writes a GitHub Actions step summary, and optionally posts or
 updates a comment on pull requests.
 
+Supports LCOV and Go coverage profiles for coverage, and JUnit XML and
+pytest-json-report for test results.
+
 This action is a **post-processing step** — it does not run tests itself.
 Pair it with a test-runner action (e.g.
 [`smells/test/python/pytest`](./../python/pytest/)) that produces the report
@@ -19,8 +22,9 @@ files first.
 4. Runs `tests-summary` against the supplied report files, writing a detailed
     step-summary Markdown file and a compact PR-comment Markdown file
 5. Appends the step summary to `$GITHUB_STEP_SUMMARY`
-6. On `pull_request` events: finds any existing comment identified by
-    `<!-- coverage-report -->` and creates or updates it
+6. On `pull_request` events: finds any existing comment identified by the
+    `header-comment` marker (default `<!-- coverage-report -->`) and creates
+    or updates it
 
 ## Requirements
 
@@ -45,6 +49,7 @@ permissions:
 | Input | Default | Description |
 | --- | --- | --- |
 | `lcov-file` | `reports/coverage/lcov.info` | Path to the LCOV coverage file |
+| `go-cover-file` | `coverage.out` | Path to the Go coverage profile file |
 | `junit-file` | `reports/test/junit.xml` | Path to the JUnit XML test results file |
 | `pytest-json-file` | `reports/test/.report.json` | Path to the pytest-json-report file |
 
@@ -53,6 +58,7 @@ permissions:
 | Input | Default | Description |
 | --- | --- | --- |
 | `token` | `${{ github.token }}` | GitHub token used to post or update the PR comment. Defaults to the built-in `GITHUB_TOKEN`. |
+| `header-comment` | `<!-- coverage-report -->` | Marker comment used to identify and update the coverage PR comment across runs. |
 
 ## Examples
 
@@ -91,6 +97,44 @@ jobs:
           lcov-file: build/coverage/lcov.info
           junit-file: build/test/junit.xml
           pytest-json-file: build/test/.report.json
+```
+
+---
+
+### Go coverage
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run tests
+        run: go test -coverprofile=coverage.out ./...
+
+      - uses: camalot/actions/smells/test/coverage@v1
+        if: always()
+        with:
+          go-cover-file: coverage.out
+```
+
+---
+
+### Custom PR comment marker
+
+Set `header-comment` when a workflow needs a distinct marker to keep coverage
+comments from multiple jobs (e.g. one per language) separate on the same PR.
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: camalot/actions/smells/test/coverage@v1
+        if: always()
+        with:
+          header-comment: "<!-- coverage-report:go -->"
 ```
 
 ---
