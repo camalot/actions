@@ -27,10 +27,10 @@ inputs:
     required: false
     default: "reports/test/.report.json"
 
-  header-comment:
-    description: "Header comment to include in the coverage report"
+  title:
+    description: "Optional title appended to the coverage heading, e.g. a matrix job label such as matrix.os"
     required: false
-    default: "<!-- coverage-report -->"
+    default: ""
 
 runs:
   using: "composite"
@@ -56,6 +56,7 @@ runs:
         TEST_PYTEST_JSON_FILE: ${{ inputs.pytest-json-file }}
         TEST_GO_COVER_FILE: ${{ inputs.go-cover-file }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        TITLE: ${{ inputs.title }}
       run: |
         python "${GITHUB_ACTION_PATH}/../../../.github/scripts/tests-summary/main.py" \
           --lcov "$TEST_LCOV_FILE" \
@@ -64,7 +65,7 @@ runs:
           --pytest-json "$TEST_PYTEST_JSON_FILE" \
           --summary-out reports/coverage/step-summary.md \
           --comment-out reports/coverage/pr-comment.md \
-          --header-comment "$INPUT_HEADER_COMMENT" \
+          --title "$TITLE" \
           --run-url "$RUN_URL"
 
     - name: Write Step Summary
@@ -79,7 +80,8 @@ runs:
       id: find_comment
       with:
         issue-number: ${{ github.event.pull_request.number }}
-        body-includes: ${{ inputs.header-comment }}
+        # Must match the marker main.py's format_coverage_comment() embeds.
+        body-includes: ${{ inputs.title != '' && format('<!-- coverage-report:{0} -->', inputs.title) || '<!-- coverage-report -->' }}
         token: ${{ inputs.token }}
 
     - name: Post or Update PR comment

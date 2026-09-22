@@ -554,12 +554,13 @@ def format_test_results_comment(results: TestResults, run_url: str = "") -> str:
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def format_coverage_summary(summary: CoverageSummary) -> str:
+def format_coverage_summary(summary: CoverageSummary, title: str = "") -> str:
     total = summary.total
     label = _SOURCE_LABELS.get(summary.source, summary.source)
+    title_suffix = f" ({title})" if title else ""
 
     lines = [
-        "## Coverage Report",
+        f"## Coverage Report{title_suffix}",
         "",
         f"*Source: {label}*",
         "",
@@ -591,14 +592,19 @@ def format_coverage_summary(summary: CoverageSummary) -> str:
     return "\n".join(lines)
 
 
-def format_coverage_comment(summary: CoverageSummary, run_url: str = "", header_comment: str = "<!-- coverage-report -->") -> str:
+def format_coverage_comment(summary: CoverageSummary, run_url: str = "", title: str = "") -> str:
     total = summary.total
     detail_link = f" · [Full report →]({run_url})" if run_url else ""
+    title_suffix = f" ({title})" if title else ""
+    # The title also makes this marker unique per matrix leg, so find-comment
+    # can target the right PR comment when a workflow runs this action more
+    # than once (e.g. one leg per OS).
+    header_comment = f"<!-- coverage-report:{title} -->" if title else "<!-- coverage-report -->"
     worst = sorted(summary.files, key=lambda x: x.line_pct)[:5]
 
     lines = [
-        f"{header_comment}",
-        f"## {_status_icon(total.line_pct)} Coverage Summary{detail_link}",
+        header_comment,
+        f"## {_status_icon(total.line_pct)} Coverage Summary{title_suffix}{detail_link}",
         "",
         "| Lines | Branches | Functions |",
         "|------:|---------:|----------:|",
@@ -717,7 +723,7 @@ Examples:
         --summary-out reports/step-summary.md \\
         --comment-out reports/pr-comment.md \\
         --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        --header-comment "<!-- coverage-report -->"
+        --title "${{ matrix.os }}"
 
     # Coverage only, no test results:
     python main.py --no-junit --no-pytest-json --lcov coverage/lcov.info
@@ -770,10 +776,10 @@ Examples:
     )
 
     out.add_argument(
-        "--header-comment",
-        default="<!-- coverage-report -->",
-        metavar="COMMENT",
-        help="Header comment to include in the coverage report (default: <!-- coverage-report -->)",
+        "--title",
+        default="",
+        metavar="TITLE",
+        help="Optional title appended to the coverage heading, e.g. a matrix job label (default: none)",
     )
 
     return parser
@@ -830,9 +836,9 @@ def main() -> int:
             if not coverage.files:
                 print(f"warning: no coverage records found in {report_path}", file=sys.stderr)
                 continue
-            summary_sections.append(src.summary_formatter(coverage))  # type: ignore[call-arg]
+            summary_sections.append(src.summary_formatter(coverage, args.title))  # type: ignore[call-arg]
             comment_sections.append(
-                src.comment_formatter(coverage, args.run_url, args.header_comment)  # type: ignore[call-arg]
+                src.comment_formatter(coverage, args.run_url, args.title)  # type: ignore[call-arg]
             )
             found_any = True
         except Exception as exc:  # noqa: BLE001

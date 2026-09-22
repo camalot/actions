@@ -22,9 +22,9 @@ files first.
 4. Runs `tests-summary` against the supplied report files, writing a detailed
     step-summary Markdown file and a compact PR-comment Markdown file
 5. Appends the step summary to `$GITHUB_STEP_SUMMARY`
-6. On `pull_request` events: finds any existing comment identified by the
-    `header-comment` marker (default `<!-- coverage-report -->`) and creates
-    or updates it
+6. On `pull_request` events: finds any existing comment identified by a
+    marker (`<!-- coverage-report -->`, or `<!-- coverage-report:<title> -->`
+    when `title` is set) and creates or updates it
 
 ## Requirements
 
@@ -58,7 +58,7 @@ permissions:
 | Input | Default | Description |
 | --- | --- | --- |
 | `token` | `${{ github.token }}` | GitHub token used to post or update the PR comment. Defaults to the built-in `GITHUB_TOKEN`. |
-| `header-comment` | `<!-- coverage-report -->` | Marker comment used to identify and update the coverage PR comment across runs. |
+| `title` | *(none)* | Optional title appended to the coverage heading, e.g. a matrix job label such as `${{ matrix.os }}`. Also makes the PR comment's identifying marker unique per title, so parallel jobs (e.g. a matrix) each get their own comment instead of overwriting one another's. |
 
 ## Examples
 
@@ -119,22 +119,26 @@ jobs:
 
 ---
 
-### Custom PR comment marker
+### Matrix jobs — distinct title and comment per leg
 
-Set `header-comment` when a workflow needs a distinct marker to keep coverage
-comments from multiple jobs (e.g. one per language) separate on the same PR.
+Set `title` so each matrix leg's comment is labeled with the leg it came
+from, and so each leg gets its own PR comment instead of overwriting the
+others (the title also makes the comment's identifying marker unique).
 
 ```yaml
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       pull-requests: write
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: camalot/actions/smells/test/coverage@v1
         if: always()
         with:
-          header-comment: "<!-- coverage-report:go -->"
+          title: ${{ matrix.os }}
 ```
 
 ---
