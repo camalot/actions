@@ -1,4 +1,89 @@
 
+## [v1.6.0](https://github.com/camalot/actions/releases/tag/v1.6.0) - 2026-09-14
+
+### 🚀 FEATURES
+
+#### _GENERAL_
+
+- Added github-latest-version helper -[@camalot](https://github.com/camalot)
+
+- Added sscs/checksum and sscs/sbom actions -[@camalot](https://github.com/camalot)
+
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- fix: log if action fails to prepare -[@camalot](https://github.com/camalot)
+
+- fix: another shell_shfmt fix -[@camalot](https://github.com/camalot)
+
+- fix: shell_shfmt fixes -[@camalot](https://github.com/camalot)
+
+- fix: linter fixes -[@camalot](https://github.com/camalot)
+
+- fix: update smells/linter to disable the delete_previous_comment -[@camalot](https://github.com/camalot)
+
+- fix: update smells/linter to disable the delete_previous_comment -[@camalot](https://github.com/camalot)
+
+- Set gh_token on the call instead of separate step -[@camalot](https://github.com/camalot)
+
+- When the repo has no matching vMAJOR.MINOR.PATCH tags yet -[@camalot](https://github.com/camalot)
+
+
+### 💼 OTHER
+
+#### _GENERAL_
+
+- Merge branch 'main' of github.com:camalot/actions -[@camalot](https://github.com/camalot)
+
+- Main' of github.com:camalot/actions: -[@camalot](https://github.com/camalot)
+
+
+### 📚 DOCUMENTATION
+
+#### _GENERAL_
+
+- Added documentation for helper action -[@camalot](https://github.com/camalot)
+
+- Update docs -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- chore(release): update changelog for v1.5.3 -[@camalot](https://github.com/camalot)
+
+- chore(release): update changelog for v1.5.2 -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+- [@github-actions[bot]](https://github.com/github-actions[bot])
+## 📈 Commit Statistics
+
+
+- `16` commits contributed to the release.
+- `79` days have passed between the first and last commit.
+- `6` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `79` days  have passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[16,2,79,6,0,79]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.5.3...v1.6.0
+
 ## [v1.5.3](https://github.com/camalot/actions/releases/tag/v1.5.3) - 2026-06-27
 
 ### 🐛 BUG FIXES
