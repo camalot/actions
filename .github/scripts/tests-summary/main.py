@@ -788,6 +788,7 @@ def main() -> int:
     summary_sections: list[str] = []
     comment_sections: list[str] = []
     found_any = False
+    checked_paths: list[tuple[str, Path]] = []
 
     # ── Test-results sources (listed before coverage in the output) ──────────
 
@@ -802,6 +803,7 @@ def main() -> int:
             continue
 
         report_path = Path(path_str)
+        checked_paths.append((src.name, report_path))
         if not report_path.exists():
             continue
 
@@ -825,6 +827,7 @@ def main() -> int:
             continue
 
         report_path = Path(path_str)
+        checked_paths.append((src.name, report_path))
         if not report_path.exists():
             continue
 
@@ -840,10 +843,11 @@ def main() -> int:
             print(f"warning: failed to parse {src.name} report at {report_path}: {exc}", file=sys.stderr)
 
     if not found_any:
-        print(
-            "warning: no report files found — nothing to output.\n" "Run with --help to see available options.",
-            file=sys.stderr,
-        )
+        print("warning: no report files found — nothing to output.", file=sys.stderr)
+        print(f"note: current working directory is {Path.cwd()}", file=sys.stderr)
+        for name, path in checked_paths:
+            print(f"note: checked {name} at {path.resolve()} (exists: {path.exists()})", file=sys.stderr)
+        print("Run with --help to see available options.", file=sys.stderr)
         return 1
 
     separator = "\n---\n\n"

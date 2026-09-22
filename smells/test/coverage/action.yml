@@ -36,6 +36,7 @@ runs:
   using: "composite"
   steps:
     - name: Create /etc/lsb-release
+      if: runner.os == 'Linux'
       shell: bash
       run: |
         echo "DISTRIB_RELEASE=22.04" | sudo tee -a /etc/lsb-release
