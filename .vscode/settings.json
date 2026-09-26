@@ -10,6 +10,7 @@
     "MJMB",
     "nvmrc",
     "pipefail",
+    "pytest",
     "SHELLCHECK",
     "SRECORE",
     "TMJM",
