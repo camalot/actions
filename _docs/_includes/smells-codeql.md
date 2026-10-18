@@ -1,0 +1,1 @@
+../../smells/codeql/README.md
