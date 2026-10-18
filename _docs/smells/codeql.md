@@ -1,7 +1,7 @@
 ---
 title: CodeQL Action
 nav_order: 4
-parent: Smells
+parent: 👃 Smells
 description: Action for running CodeQL analysis
 layout: default
 has_toc: false

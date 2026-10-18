@@ -1,5 +1,5 @@
 ---
-title: Smells
+title: 👃 Smells
 nav_order: 3
 layout: default
 ---
