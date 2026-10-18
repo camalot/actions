@@ -25,7 +25,7 @@ runs:
       with:
         languages: ${{ inputs.language }}
         build-mode: ${{ inputs['build-mode'] }}
- 
+
     - uses: github/codeql-action/autobuild@v4
 
     - name: Perform CodeQL Analysis
