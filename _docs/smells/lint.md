@@ -1,5 +1,5 @@
 ---
-title: Lint Codebase
+title: 🧑‍💻 Lint Codebase
 nav_order: 1
 parent: 👃 Smells
 description: Run linters to ensure code quality and consistency across the codebase.

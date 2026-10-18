@@ -1,5 +1,5 @@
 ---
-title: CodeQL Action
+title: 🧑‍💻 CodeQL Action
 nav_order: 4
 parent: 👃 Smells
 description: Action for running CodeQL analysis
