@@ -1,0 +1,57 @@
+---
+
+version: '3'
+
+tasks:
+  codeql:*:
+    vars:
+      LANGUAGE: '{{index .MATCH 0}}'
+    requires:
+      vars:
+        - name: LANGUAGE
+          # https://codeql.github.com/docs/codeql-overview/codeql-tools/#codeql-packs
+          enum:
+            - actions
+            - cpp
+            - csharp
+            - go
+            - java
+            - javascript-typescript
+            - python
+            - ruby
+            - rust
+            - swift
+
+    internal: true
+    silent: true
+    desc: 'codeql.yml workflow: CodeQL analysis with the same code-scanning suite; fails on any alert'
+    cmds:
+      # Uses a codeql CLI on PATH, else the official gh extension; skips loudly
+      # like 'race' does without a C compiler.
+      - |
+        if command -v codeql >/dev/null 2>&1; then
+          cq="codeql"
+        elif gh codeql version >/dev/null 2>&1; then
+          cq="gh codeql"
+        else
+          echo "⚠ skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql) - CI still runs codeql.yml."
+          exit 0
+        fi
+        mkdir -p .codeql
+        if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root=. --overwrite >.codeql/create.log 2>&1; then
+          cat .codeql/create.log
+          exit 1
+        fi
+        if ! $cq database analyze .codeql/db codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
+          cat .codeql/analyze.log
+          exit 1
+        fi
+        # -j: no trailing newline (Windows jq writes CRLF).
+        count="$(jq -j '[.runs[].results[]] | length' .codeql/results.sarif)"
+        if [ "$count" != "0" ]; then
+          alert_word="$([ $count -eq 1 ] && echo "alert" || echo "alerts")"
+          jq -r '.runs[].results[] | "\(.ruleId) \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"' .codeql/results.sarif
+          echo "CodeQL ({{.LANGUAGE}}) found $count $alert_word; full report: .codeql/results.sarif"
+          exit 1
+        fi
+        echo "CodeQL ({{.LANGUAGE}}): no alerts"
