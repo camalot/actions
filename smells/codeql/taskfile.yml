@@ -3,11 +3,14 @@
 version: '3'
 
 tasks:
-  codeql:*:
+  codeql:*:*:
     vars:
-      LANGUAGE: '{{index .MATCH 0}}'
+      LANGUAGE: '{{index .MATCH 0 | default ""}}'
+      SOURCE_ROOT: '{{index .MATCH 1 | default "."}}'
     requires:
       vars:
+        - name: SOURCE_ROOT
+          default: "."
         - name: LANGUAGE
           # https://codeql.github.com/docs/codeql-overview/codeql-tools/#codeql-packs
           enum:
@@ -38,7 +41,7 @@ tasks:
           exit 0
         fi
         mkdir -p .codeql
-        if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root=. --overwrite >.codeql/create.log 2>&1; then
+        if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
           cat .codeql/create.log
           exit 1
         fi
