@@ -1,0 +1,32 @@
+---
+name: CodeQL Action
+description: Action for running CodeQL analysis
+inputs:
+  language:
+    description: The programming language to analyze
+    required: true
+  build-mode:
+    description: The build mode for the analysis
+    required: false
+    default: none
+runs:
+  using: "composite"
+  steps:
+    - name: Run CodeQL Analysis
+      shell: bash
+      run: |
+        echo "Running CodeQL analysis for language: ${{ inputs.language }} with build mode: ${{ inputs['build-mode'] }}"
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ inputs.language }}
+        build-mode: ${{ inputs['build-mode'] }}
+    
+    - uses: github/codeql-action/autobuild@v4
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:${{inputs.language}}"
+  

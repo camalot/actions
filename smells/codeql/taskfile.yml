@@ -16,7 +16,7 @@ tasks:
             - csharp
             - go
             - java
-            - javascript-typescript
+            - javascript
             - python
             - ruby
             - rust
