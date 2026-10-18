@@ -13,9 +13,12 @@ runs:
   using: "composite"
   steps:
     - name: Run CodeQL Analysis
+      env:
+        LANGUAGE: ${{ inputs.language }}
+        BUILD_MODE: ${{ inputs['build-mode'] }}
       shell: bash
       run: |
-        echo "Running CodeQL analysis for language: ${{ inputs.language }} with build mode: ${{ inputs['build-mode'] }}"
+        echo "Running CodeQL analysis for language: ${LANGUAGE} with build mode: ${BUILD_MODE}"
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
@@ -29,4 +32,3 @@ runs:
       uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{inputs.language}}"
-  
