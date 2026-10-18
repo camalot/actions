@@ -1,7 +1,7 @@
 ---
 title: 🧑‍💻 Lint Codebase
 nav_order: 1
-parent: 👃 Smells
+parent: Smells
 description: Run linters to ensure code quality and consistency across the codebase.
 layout: default
 has_toc: false

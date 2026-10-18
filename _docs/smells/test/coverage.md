@@ -2,7 +2,7 @@
 title: Test Coverage Report
 nav_order: 2
 parent: Test
-grand_parent: 👃 Smells
+grand_parent: Smells
 description: Collect coverage, and post a summary comment on pull requests.
 layout: default
 has_toc: false

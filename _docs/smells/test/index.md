@@ -1,7 +1,7 @@
 ---
-title: 🧪 Test
+title: Test
 nav_order: 3
-parent: 👃 Smells
+parent: Smells
 layout: default
 ---
 

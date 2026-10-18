@@ -1,8 +1,8 @@
 ---
-title: 🐍 PyTest Run Tests
+title: PyTest Run Tests
 nav_order: 1
-parent: 🐍 Python
-grand_parent: 🧪 Test
+parent: Python
+grand_parent: Test
 description: Run tests using pytest, generate coverage report, and optionally comment on PR
 layout: default
 has_toc: false
