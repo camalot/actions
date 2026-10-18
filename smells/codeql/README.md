@@ -4,6 +4,28 @@ This directory contains the CodeQL analysis setup for the project, including the
 
 ## Action
 
+### Permissions
+
+```yaml
+permissions:
+  # required for all workflows
+  security-events: write
+
+  # required to fetch internal or private CodeQL packs
+  packages: read
+
+  # only required for workflows in private repositories
+  actions: read
+  contents: read
+```
+
+### Inputs
+
+The following inputs are available for the CodeQL action:
+
+- `language`: The programming language to analyze (e.g., `javascript`, `python`, `cpp`).
+- `build-mode`: The build mode for the analysis (e.g., `none`, `incremental`).
+
 ## TaskFile
 
 The TaskFile defines tasks for running CodeQL analysis, including creating the database, analyzing the code, and reporting any findings. It is used to automate the CodeQL workflow within the project.
