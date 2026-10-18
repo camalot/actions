@@ -84,7 +84,7 @@ To include the CodeQL analysis tasks in your project, you need to reference the 
 version: '3'
 
 includes:
-  codeql: 
+  codeql:
     # https
     # taskfile: https://github.com/camalot/actions/raw/refs/heads/main/smells/codeql/TaskFile.yml
     # git over ssh
@@ -137,7 +137,7 @@ There are 2 arguments for the `codeql:*:*` task:
 version: '3'
 
 includes:
-  codeql-remote: 
+  codeql-remote:
     taskfile: 'git@github.com:camalot/actions.git//smells/codeql/TaskFile.yml?ref=main'
     flatten: true
 
