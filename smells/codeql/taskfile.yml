@@ -25,9 +25,9 @@ tasks:
             - rust
             - swift
 
-    internal: true
-    silent: true
-    desc: 'codeql.yml workflow: CodeQL analysis with the same code-scanning suite; fails on any alert'
+    internal: false
+    silent: false
+    desc: 'CodeQL analysis; fails on any alert'
     cmds:
       # Uses a codeql CLI on PATH, else the official gh extension; skips loudly
       # like 'race' does without a C compiler.
