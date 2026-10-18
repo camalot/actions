@@ -1,4 +1,75 @@
 
+## [v1.8.0](https://github.com/camalot/actions/releases/tag/v1.8.0) - 2026-10-18
+
+### 🚀 FEATURES
+
+#### _GENERAL_
+
+- Added codeql taskfile -[@camalot](https://github.com/camalot)
+
+- Added codeql action -[@camalot](https://github.com/camalot)
+
+
+### 🐛 BUG FIXES
+
+
+#### _CODEQL_
+- Allow passing the source root -[@camalot](https://github.com/camalot)
+
+- Set silent and internal to false -[@camalot](https://github.com/camalot)
+
+#### _GENERAL_
+
+
+### 📚 DOCUMENTATION
+
+#### _GENERAL_
+
+- Add some docs for codeql action/taskfile -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+
+#### _LINT_
+- Lint fixes -[@camalot](https://github.com/camalot)
+
+- Lint fixes -[@camalot](https://github.com/camalot)
+
+- Lint fixes -[@camalot](https://github.com/camalot)
+
+
+#### _REPO_
+- Some vscode config settings -[@camalot](https://github.com/camalot)
+
+#### _GENERAL_
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+## 📈 Commit Statistics
+
+
+- `9` commits contributed to the release.
+- `22` days have passed between the first and last commit.
+- `9` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `26` days  have passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[9,1,22,9,0,26]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.7.1...v1.8.0
+
 ## [v1.7.1](https://github.com/camalot/actions/releases/tag/v1.7.1) - 2026-09-22
 
 ### 🐛 BUG FIXES
