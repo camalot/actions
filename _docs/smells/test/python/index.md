@@ -1,8 +1,8 @@
 ---
-title: 🐍 Python
+title: Python
 nav_order: 1
-parent: 🧪 Test
-grand_parent: 👃 Smells
+parent: Test
+grand_parent: Smells
 layout: default
 ---
 
