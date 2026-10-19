@@ -25,8 +25,8 @@ tasks:
             - rust
             - swift
 
-    internal: false
-    silent: false
+    internal: true
+    silent: true
     desc: 'CodeQL analysis; fails on any alert'
     cmds:
       # Uses a codeql CLI on PATH, else the official gh extension; skips loudly
