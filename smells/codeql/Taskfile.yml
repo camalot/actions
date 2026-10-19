@@ -10,7 +10,6 @@ tasks:
     requires:
       vars:
         - name: SOURCE_ROOT
-          default: "."
         - name: LANGUAGE
           # https://codeql.github.com/docs/codeql-overview/codeql-tools/#codeql-packs
           enum:
@@ -37,7 +36,7 @@ tasks:
           $Language = "{{.LANGUAGE}}"
           $SourceRoot = "{{.SOURCE_ROOT}}"
           $ErrorActionPreference = "Continue"
-          Write-Output "🟢 Starting CodeQL analysis for language: $Language"
+          Write-Output "🟢 Starting CodeQL analysis for language/source root: $Language / $SourceRoot"
           $codeql = Get-Command codeql -ErrorAction SilentlyContinue
           $prefix = @()
           if (-not $codeql) {
@@ -58,11 +57,17 @@ tasks:
           New-Item -ItemType Directory -Path .codeql -Force -ErrorAction Stop | Out-Null
           & $codeql @prefix database create .codeql/db "--language=$Language" "--source-root=$SourceRoot" --overwrite *> .codeql/create.log
           if ($LASTEXITCODE -ne 0) {
+            Write-Output "🟨 CodeQL database creation failed"
+            Write-Output "🟨 See .codeql/create.log for details"
+            Write-Output ""
             Get-Content .codeql/create.log
             exit 1
           }
           & $codeql @prefix database analyze .codeql/db "codeql/${Language}-queries:codeql-suites/${Language}-code-scanning.qls" --download --format=sarif-latest --output=.codeql/results.sarif *> .codeql/analyze.log
           if ($LASTEXITCODE -ne 0) {
+            Write-Output "🟨 CodeQL analysis failed"
+            Write-Output "🟨 See .codeql/analyze.log for details"
+            Write-Output ""
             Get-Content .codeql/analyze.log
             exit 1
           }
@@ -78,10 +83,10 @@ tasks:
               Write-Output ("{0} {1}:{2}: {3}" -f $result.ruleId, $location.artifactLocation.uri, $location.region.startLine, $result.message.text)
             }
             $alertWord = if ($results.Count -eq 1) { "alert" } else { "alerts" }
-            Write-Output "CodeQL ($Language) found $($results.Count) $alertWord; full report: .codeql/results.sarif"
+            Write-Output "❌ CodeQL ($Language/$SourceRoot) found $($results.Count) $alertWord; full report: .codeql/results.sarif"
             exit 1
           }
-          Write-Output "✅ CodeQL (${Language}): No Alerts"
+          Write-Output "✅ CodeQL (${Language}/$SourceRoot): No Alerts"
           '
       - platforms: [linux, darwin]
         cmd: |
@@ -96,10 +101,16 @@ tasks:
           fi
           mkdir -p .codeql
           if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
+            echo "🟨 CodeQL database creation failed"
+            echo "🟨 See .codeql/create.log for details"
+            echo ""
             cat .codeql/create.log
             exit 1
           fi
           if ! $cq database analyze .codeql/db codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
+            echo "🟨 CodeQL analysis failed"
+            echo "🟨 See .codeql/analyze.log for details"
+            echo ""
             cat .codeql/analyze.log
             exit 1
           fi
@@ -108,7 +119,7 @@ tasks:
           if [ "$count" != "0" ]; then
             alert_word="$([ $count -eq 1 ] && echo "alert" || echo "alerts")"
             jq -r '.runs[].results[] | "\(.ruleId) \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"' .codeql/results.sarif
-            echo "CodeQL ({{.LANGUAGE}}) found $count $alert_word; full report: .codeql/results.sarif"
+            echo "❌ CodeQL ({{.LANGUAGE}}/{{.SOURCE_ROOT}}) found $count $alert_word; full report: .codeql/results.sarif"
             exit 1
           fi
-          echo "✅ CodeQL ({{.LANGUAGE}}): No Alerts"
+          echo "✅ CodeQL ({{.LANGUAGE}}/{{.SOURCE_ROOT}}): No Alerts"
