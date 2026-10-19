@@ -37,6 +37,7 @@ tasks:
           $Language = "{{.LANGUAGE}}"
           $SourceRoot = "{{.SOURCE_ROOT}}"
           $ErrorActionPreference = "Continue"
+          Write-Output "🟢 Starting CodeQL analysis for language: $Language"
           $codeql = Get-Command codeql -ErrorAction SilentlyContinue
           $prefix = @()
           if (-not $codeql) {
@@ -51,7 +52,7 @@ tasks:
             }
           }
           if (-not $codeql) {
-            Write-Output "⚠️ Skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
+            Write-Output "🟨 Skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
             exit 0
           }
           New-Item -ItemType Directory -Path .codeql -Force -ErrorAction Stop | Out-Null
@@ -80,16 +81,17 @@ tasks:
             Write-Output "CodeQL ($Language) found $($results.Count) $alertWord; full report: .codeql/results.sarif"
             exit 1
           }
-          Write-Output "CodeQL (${Language}): no alerts"
+          Write-Output "✅ CodeQL (${Language}): No Alerts"
           '
       - platforms: [linux, darwin]
         cmd: |
+          echo "🟢 Starting CodeQL analysis for language: {{.LANGUAGE}}"
           if command -v codeql >/dev/null 2>&1; then
             cq="codeql"
           elif gh codeql version >/dev/null 2>&1; then
             cq="gh codeql"
           else
-            echo "⚠️ skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
+            echo "🟨 Skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
             exit 0
           fi
           mkdir -p .codeql
@@ -109,4 +111,4 @@ tasks:
             echo "CodeQL ({{.LANGUAGE}}) found $count $alert_word; full report: .codeql/results.sarif"
             exit 1
           fi
-          echo "CodeQL ({{.LANGUAGE}}): no alerts"
+          echo "✅ CodeQL ({{.LANGUAGE}}): No Alerts"
