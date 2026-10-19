@@ -1,4 +1,55 @@
 
+## [v1.8.5](https://github.com/camalot/actions/releases/tag/v1.8.5) - 2026-10-19
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Added some logging for codeql -[@camalot](https://github.com/camalot)
+
+- Added some more logging output for codeql to include the source root -[@camalot](https://github.com/camalot)
+
+
+### 💼 OTHER
+
+#### _GENERAL_
+
+- Merge branch 'main' of ssh://github.com/camalot/actions -[@camalot](https://github.com/camalot)
+
+- Main' of ssh://github.com/camalot/actions: -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- chore(release): update changelog for v1.8.4 -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+## 📈 Commit Statistics
+
+
+- `5` commits contributed to the release.
+- `0` days have passed between the first and last commit.
+- `2` commits parsed as conventional.
+- `0` linked issues detected in commits.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[5,1,0,2,0,0]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.8.4...v1.8.5
+
 ## [v1.8.4](https://github.com/camalot/actions/releases/tag/v1.8.4) - 2026-10-19
 
 ### 🐛 BUG FIXES
