@@ -35,6 +35,7 @@ tasks:
           powershell -NoProfile -NonInteractive -Command '
           $Language = "{{.LANGUAGE}}"
           $SourceRoot = "{{.SOURCE_ROOT}}"
+          $Database = ".codeql/db-$Language"
           $ErrorActionPreference = "Continue"
           Write-Output "🟢 Starting CodeQL analysis for language/source root: $Language / $SourceRoot"
           $codeql = Get-Command codeql -ErrorAction SilentlyContinue
@@ -55,7 +56,7 @@ tasks:
             exit 0
           }
           New-Item -ItemType Directory -Path .codeql -Force -ErrorAction Stop | Out-Null
-          & $codeql @prefix database create .codeql/db "--language=$Language" "--source-root=$SourceRoot" --overwrite *> .codeql/create.log
+          & $codeql @prefix database create $Database "--language=$Language" "--source-root=$SourceRoot" --overwrite *> .codeql/create.log
           if ($LASTEXITCODE -ne 0) {
             Write-Output "🟨 CodeQL database creation failed"
             Write-Output "🟨 See .codeql/create.log for details"
@@ -63,7 +64,7 @@ tasks:
             Get-Content .codeql/create.log
             exit 1
           }
-          & $codeql @prefix database analyze .codeql/db "codeql/${Language}-queries:codeql-suites/${Language}-code-scanning.qls" --download --format=sarif-latest --output=.codeql/results.sarif *> .codeql/analyze.log
+          & $codeql @prefix database analyze $Database "codeql/${Language}-queries:codeql-suites/${Language}-code-scanning.qls" --download --format=sarif-latest --output=.codeql/results.sarif *> .codeql/analyze.log
           if ($LASTEXITCODE -ne 0) {
             Write-Output "🟨 CodeQL analysis failed"
             Write-Output "🟨 See .codeql/analyze.log for details"
@@ -100,14 +101,14 @@ tasks:
             exit 0
           fi
           mkdir -p .codeql
-          if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
+          if ! $cq database create .codeql/db-{{.LANGUAGE}} --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
             echo "🟨 CodeQL database creation failed"
             echo "🟨 See .codeql/create.log for details"
             echo ""
             cat .codeql/create.log
             exit 1
           fi
-          if ! $cq database analyze .codeql/db codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
+          if ! $cq database analyze .codeql/db-{{.LANGUAGE}} codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
             echo "🟨 CodeQL analysis failed"
             echo "🟨 See .codeql/analyze.log for details"
             echo ""

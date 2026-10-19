@@ -129,6 +129,17 @@ There are 2 arguments for the `codeql:*:*` task:
 - `LANGUAGE`: The programming language to analyze (e.g., `javascript`, `python`, `cpp`).
 - `SOURCE_ROOT`: The root directory of the source code to analyze.
 
+Each language uses its own database at `.codeql/db-<language>` (for example,
+`.codeql/db-actions`). Rerunning a language overwrites that language's database,
+including when using a different source root. Logs remain at `.codeql/create.log`
+and `.codeql/analyze.log`, and the report is written to `.codeql/results.sarif`.
+Run analyses sequentially because these log and report paths are shared.
+
+An existing `.codeql/db` directory or database cluster is left untouched. This
+avoids CodeQL's "Unrecognized file in database cluster" error when that directory
+contains databases from a previous setup, such as `db-go`; no manual deletion of
+the old cluster is required.
+
 ### Example Usage
 
 ```yaml
