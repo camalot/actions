@@ -1,4 +1,62 @@
 
+## [v1.8.2](https://github.com/camalot/actions/releases/tag/v1.8.2) - 2026-10-19
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Make internal -[@camalot](https://github.com/camalot)
+
+
+### 💼 OTHER
+
+#### _GENERAL_
+
+- Merge branch 'main' of github.com:camalot/actions -[@camalot](https://github.com/camalot)
+
+- Main' of github.com:camalot/actions: -[@camalot](https://github.com/camalot)
+
+
+### 📚 DOCUMENTATION
+
+#### _GENERAL_
+
+- More docs updates to publish -[@camalot](https://github.com/camalot)
+
+
+### ⚙️ MISCELLANEOUS TASKS
+
+#### _GENERAL_
+
+- chore(release): update changelog for v1.8.1 -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+- [@github-actions[bot]](https://github.com/github-actions[bot])
+## 📈 Commit Statistics
+
+
+- `5` commits contributed to the release.
+- `1` day has passed between the first and last commit.
+- `2` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `1` day  has passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[5,2,1,2,0,1]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.8.1...v1.8.2
+
 ## [v1.8.1](https://github.com/camalot/actions/releases/tag/v1.8.1) - 2026-10-18
 
 ### 📚 DOCUMENTATION
