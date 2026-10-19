@@ -25,36 +25,88 @@ tasks:
             - rust
             - swift
 
-    internal: true
+    internal: false
     silent: true
     desc: 'CodeQL analysis; fails on any alert'
     cmds:
       # Uses a codeql CLI on PATH, else the official gh extension; skips loudly
       # like 'race' does without a C compiler.
-      - |
-        if command -v codeql >/dev/null 2>&1; then
-          cq="codeql"
-        elif gh codeql version >/dev/null 2>&1; then
-          cq="gh codeql"
-        else
-          echo "⚠ skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql) - CI still runs codeql.yml."
-          exit 0
-        fi
-        mkdir -p .codeql
-        if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
-          cat .codeql/create.log
-          exit 1
-        fi
-        if ! $cq database analyze .codeql/db codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
-          cat .codeql/analyze.log
-          exit 1
-        fi
-        # -j: no trailing newline (Windows jq writes CRLF).
-        count="$(jq -j '[.runs[].results[]] | length' .codeql/results.sarif)"
-        if [ "$count" != "0" ]; then
-          alert_word="$([ $count -eq 1 ] && echo "alert" || echo "alerts")"
-          jq -r '.runs[].results[] | "\(.ruleId) \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"' .codeql/results.sarif
-          echo "CodeQL ({{.LANGUAGE}}) found $count $alert_word; full report: .codeql/results.sarif"
-          exit 1
-        fi
-        echo "CodeQL ({{.LANGUAGE}}): no alerts"
+      - platforms: [windows]
+        cmd: |
+          powershell -NoProfile -NonInteractive -Command '
+          $Language = "{{.LANGUAGE}}"
+          $SourceRoot = "{{.SOURCE_ROOT}}"
+          $ErrorActionPreference = "Continue"
+          $codeql = Get-Command codeql -ErrorAction SilentlyContinue
+          $prefix = @()
+          if (-not $codeql) {
+            $codeql = Get-Command gh -ErrorAction SilentlyContinue
+            if ($codeql) {
+              & $codeql codeql version *> $null
+              if ($LASTEXITCODE -eq 0) {
+                $prefix = @("codeql")
+              } else {
+                $codeql = $null
+              }
+            }
+          }
+          if (-not $codeql) {
+            Write-Output "⚠️ Skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
+            exit 0
+          }
+          New-Item -ItemType Directory -Path .codeql -Force -ErrorAction Stop | Out-Null
+          & $codeql @prefix database create .codeql/db "--language=$Language" "--source-root=$SourceRoot" --overwrite *> .codeql/create.log
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content .codeql/create.log
+            exit 1
+          }
+          & $codeql @prefix database analyze .codeql/db "codeql/${Language}-queries:codeql-suites/${Language}-code-scanning.qls" --download --format=sarif-latest --output=.codeql/results.sarif *> .codeql/analyze.log
+          if ($LASTEXITCODE -ne 0) {
+            Get-Content .codeql/analyze.log
+            exit 1
+          }
+          $report = Get-Content .codeql/results.sarif -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+          $results = @(foreach ($run in $report.runs) {
+            foreach ($result in $run.results) {
+              $result
+            }
+          })
+          if ($results.Count -ne 0) {
+            foreach ($result in $results) {
+              $location = $result.locations[0].physicalLocation
+              Write-Output ("{0} {1}:{2}: {3}" -f $result.ruleId, $location.artifactLocation.uri, $location.region.startLine, $result.message.text)
+            }
+            $alertWord = if ($results.Count -eq 1) { "alert" } else { "alerts" }
+            Write-Output "CodeQL ($Language) found $($results.Count) $alertWord; full report: .codeql/results.sarif"
+            exit 1
+          }
+          Write-Output "CodeQL (${Language}): no alerts"
+          '
+      - platforms: [linux, darwin]
+        cmd: |
+          if command -v codeql >/dev/null 2>&1; then
+            cq="codeql"
+          elif gh codeql version >/dev/null 2>&1; then
+            cq="gh codeql"
+          else
+            echo "⚠️ skipping CodeQL: no CLI found (install with: gh extension install github/gh-codeql)"
+            exit 0
+          fi
+          mkdir -p .codeql
+          if ! $cq database create .codeql/db --language={{.LANGUAGE}} --source-root={{.SOURCE_ROOT}} --overwrite >.codeql/create.log 2>&1; then
+            cat .codeql/create.log
+            exit 1
+          fi
+          if ! $cq database analyze .codeql/db codeql/{{.LANGUAGE}}-queries:codeql-suites/{{.LANGUAGE}}-code-scanning.qls --download --format=sarif-latest --output=.codeql/results.sarif >.codeql/analyze.log 2>&1; then
+            cat .codeql/analyze.log
+            exit 1
+          fi
+          # -j: no trailing newline (Windows jq writes CRLF).
+          count="$(jq -j '[.runs[].results[]] | length' .codeql/results.sarif)"
+          if [ "$count" != "0" ]; then
+            alert_word="$([ $count -eq 1 ] && echo "alert" || echo "alerts")"
+            jq -r '.runs[].results[] | "\(.ruleId) \(.locations[0].physicalLocation.artifactLocation.uri):\(.locations[0].physicalLocation.region.startLine): \(.message.text)"' .codeql/results.sarif
+            echo "CodeQL ({{.LANGUAGE}}) found $count $alert_word; full report: .codeql/results.sarif"
+            exit 1
+          fi
+          echo "CodeQL ({{.LANGUAGE}}): no alerts"
