@@ -1,4 +1,45 @@
 
+## [v1.9.0](https://github.com/camalot/actions/releases/tag/v1.9.0) - 2026-11-26
+
+### 🚀 FEATURES
+
+#### _GENERAL_
+
+- Support for multi tag prefix beyond the 'v -[@camalot](https://github.com/camalot)
+
+
+### 🐛 BUG FIXES
+
+#### _GENERAL_
+
+- Mark script executable -[@camalot](https://github.com/camalot)
+
+
+## GitHub
+
+### 💛 Contributors
+
+
+- [@camalot](https://github.com/camalot)
+## 📈 Commit Statistics
+
+
+- `2` commits contributed to the release.
+- `0` days have passed between the first and last commit.
+- `2` commits parsed as conventional.
+- `0` linked issues detected in commits.
+- `38` days  have passed between releases.
+
+
+![Statistics](https://quickchart.io/chart?c={type:'bar',data:{labels:['Commits','Contributors','Days%20Between%20Commits','Conventional%20Commits','Referenced%20Links','Days%20Since%20Last%20Release'],datasets:[{label:'Release',data:[2,1,0,2,0,38]}]}})
+
+
+
+---
+
+
+**Full Changelog**: https://github.com/camalot/actions/compare/v1.8.6...v1.9.0
+
 ## [v1.8.6](https://github.com/camalot/actions/releases/tag/v1.8.6) - 2026-10-19
 
 ### 🐛 BUG FIXES
