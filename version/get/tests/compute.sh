@@ -42,7 +42,7 @@ commit_file() {
   local message="$2"
   local content="$3"
 
-  printf '%s\n' "${content}" >> "${repo}/history.txt"
+  printf '%s\n' "${content}" >>"${repo}/history.txt"
   git -C "${repo}" add history.txt
   git -C "${repo}" commit -qm "${message}"
 }
@@ -58,7 +58,7 @@ compute() {
   local cliff_bin="${8:-${CLIFF_BIN}}"
   local svu_bin="${9:-svu}"
 
-  : > "${output}"
+  : >"${output}"
   (
     cd "${repo}"
     GITHUB_OUTPUT="${output}" \
@@ -86,7 +86,7 @@ mkdir -p "${TEST_ROOT}"
 
 mixed="${TEST_ROOT}/mixed"
 init_repo "${mixed}"
-cat > "${mixed}/cliff.toml" <<'EOF'
+cat >"${mixed}/cliff.toml" <<'EOF'
 [git]
 tag_pattern = "v[0-9]+\\.[0-9]+\\.[0-9]+$"
 EOF
@@ -157,7 +157,7 @@ expect_failure \
   compute "${mixed}" "${TEST_ROOT}/duplicate-force.out" gateway-v gateway-v0.1.0 gateway-v4.5.6
 
 fake_cliff="${TEST_ROOT}/fake-cliff"
-cat > "${fake_cliff}" <<'EOF'
+cat >"${fake_cliff}" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "${FAKE_CLIFF_VERSION}"
 EOF
@@ -182,7 +182,7 @@ expect_failure \
   compute "${same_repo}" "${TEST_ROOT}/default.out" gateway-v gateway-v0.1.0 "" true false "${fake_cliff}"
 
 empty_cliff="${TEST_ROOT}/empty-cliff"
-cat > "${empty_cliff}" <<'EOF'
+cat >"${empty_cliff}" <<'EOF'
 #!/usr/bin/env bash
 exit 0
 EOF

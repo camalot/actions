@@ -43,12 +43,12 @@ regex_escape() {
   for ((i = 0; i < ${#value}; i++)); do
     char="${value:i:1}"
     case "${char}" in
-      "\\"|"."|"^"|"$"|"*"|"+"|"?"|"("|")"|"{"|"}"|"|"|"["|"]")
-        escaped+="\\${char}"
-        ;;
-      *)
-        escaped+="${char}"
-        ;;
+    "\\" | "." | "^" | "$" | "*" | "+" | "?" | "(" | ")" | "{" | "}" | "|" | "[" | "]")
+      escaped+="\\${char}"
+      ;;
+    *)
+      escaped+="${char}"
+      ;;
     esac
   done
 
@@ -156,7 +156,7 @@ if [[ "${FAIL_ON_SAME_VERSION:-true}" == "true" && "${NEXT_PLAIN}" == "${CURRENT
   exit 1
 fi
 
-IFS='.' read -r MAJOR MINOR PATCH <<< "${NEXT_PLAIN}"
+IFS='.' read -r MAJOR MINOR PATCH <<<"${NEXT_PLAIN}"
 MAJOR_MINOR="${MAJOR}.${MINOR}"
 MAJOR_MINOR_PATCH="${MAJOR}.${MINOR}.${PATCH}"
 
@@ -169,4 +169,4 @@ MAJOR_MINOR_PATCH="${MAJOR}.${MINOR}.${PATCH}"
   echo "tag_major=${TAG_PREFIX}${MAJOR}"
   echo "tag_major_minor=${TAG_PREFIX}${MAJOR_MINOR}"
   echo "tag_major_minor_patch=${TAG_PREFIX}${MAJOR_MINOR_PATCH}"
-} >> "${GITHUB_OUTPUT}"
+} >>"${GITHUB_OUTPUT}"
