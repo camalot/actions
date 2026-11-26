@@ -2,13 +2,20 @@
 name: Get Next Version
 description: >
   Calculate the next semantic version using git-cliff based on conventional
-  commit history since the last tag, and expose the version in several forms
-  (plain and v-prefixed; major, major.minor, major.minor.build).
+  commit history since the last tag for a configurable release stream, and
+  expose the version in plain and tagged forms.
 inputs:
+  tag_prefix:
+    description: >
+      Prefix used to identify and emit tags for this release stream.
+      Only fully-qualified MAJOR.MINOR.PATCH tags with this prefix participate
+      in version discovery.
+    required: false
+    default: 'v'
   default_version:
     description: >
-      Fallback version (with the leading 'v') to use when no prior tags exist
-      or when git-cliff cannot determine a bumped version.
+      Fallback version, optionally including tag_prefix, to use when no prior
+      tags exist or when git-cliff cannot determine a bumped version.
     required: false
     default: 'v0.1.0'
   fail_on_default:
@@ -22,9 +29,9 @@ inputs:
   fail_on_same_version:
     description: >
       When 'true', fail the action if next_version equals current_version and
-      the full v{major}.{minor}.{patch} tag already exists. Floating tags (v1,
-      v1.1) may be recreated safely, but re-applying an existing patch tag means
-      version detection broke (e.g. squash merge commit not parsed as conventional).
+      the full patch tag for tag_prefix already exists. Floating tags may be
+      recreated safely, but re-applying an existing patch tag means version
+      detection broke (e.g. squash merge commit not parsed as conventional).
     required: false
     default: 'true'
   enable_pr_comment:
@@ -44,10 +51,10 @@ inputs:
     default: '${{ github.token }}'
 outputs:
   current_version:
-    description: 'The most recent v* tag found in the repo, without leading "v" (e.g. 1.2.3).'
+    description: 'The most recent matching stream tag without tag_prefix (e.g. 1.2.3).'
     value: ${{ steps.compute.outputs.current_version }}
   next_version:
-    description: 'The next version determined by git-cliff, without leading "v" (e.g. 1.2.4).'
+    description: 'The next version determined by git-cliff without tag_prefix (e.g. 1.2.4).'
     value: ${{ steps.compute.outputs.next_version }}
   major:
     description: 'Major component of next_version (e.g. 1).'
@@ -59,13 +66,13 @@ outputs:
     description: 'Full Major.Minor.Patch of next_version (e.g. 1.2.4).'
     value: ${{ steps.compute.outputs.major_minor_patch }}
   tag_major:
-    description: 'Major tag form with "v" prefix (e.g. v1).'
+    description: 'Major tag form with tag_prefix (e.g. v1 or gateway-v1).'
     value: ${{ steps.compute.outputs.tag_major }}
   tag_major_minor:
-    description: 'Major.Minor tag form with "v" prefix (e.g. v1.2).'
+    description: 'Major.Minor tag form with tag_prefix (e.g. v1.2 or gateway-v1.2).'
     value: ${{ steps.compute.outputs.tag_major_minor }}
   tag_major_minor_patch:
-    description: 'Full tag form with "v" prefix (e.g. v1.2.4).'
+    description: 'Full tag form with tag_prefix (e.g. v1.2.4 or gateway-v1.2.4).'
     value: ${{ steps.compute.outputs.tag_major_minor_patch }}
 runs:
   using: "composite"
@@ -95,6 +102,13 @@ runs:
       run: |
         npm install --global git-cliff
 
+    - name: Install xget
+      uses: camalot/xget-action@v1
+      with:
+        package: caarlos0/svu
+        ignore: |
+          .sbom.json
+
     - name: Compute versions
       id: compute
       shell: bash
@@ -102,114 +116,9 @@ runs:
         DEFAULT_VERSION: ${{ inputs.default_version }}
         FAIL_ON_DEFAULT: ${{ inputs.fail_on_default }}
         FAIL_ON_SAME_VERSION: ${{ inputs.fail_on_same_version }}
+        TAG_PREFIX: ${{ inputs.tag_prefix }}
       run: |
-        set -euo pipefail
-
-        # Normalize default: accept with or without leading 'v'.
-        DEFAULT_WITH_V="v${DEFAULT_VERSION#v}"
-        DEFAULT_PLAIN="${DEFAULT_VERSION#v}"
-
-        # FORCE_NEXT_VERSION override: skip git-cliff and pin the version directly.
-        # Must match v?MAJOR.MINOR.PATCH; the full patch tag must not already exist.
-        FORCED_VERSION=""
-        if [[ -n "${FORCE_NEXT_VERSION:-}" ]]; then
-          FORCED_VERSION="v${FORCE_NEXT_VERSION#v}"
-          if ! [[ "${FORCED_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::FORCE_NEXT_VERSION ('${FORCE_NEXT_VERSION}') does not match the required format v?MAJOR.MINOR.PATCH (e.g. v1.2.3 or 1.2.3)."
-            exit 1
-          fi
-          if git tag --list | grep -qFx "${FORCED_VERSION}"; then
-            echo "::error::FORCE_NEXT_VERSION (${FORCED_VERSION}) tag already exists. Remove the tag or choose a different version."
-            exit 1
-          fi
-        fi
-
-        # Match only fully-qualified vMAJOR.MINOR.PATCH tags so that floating
-        # tags (v1, v1.1) at the same commit are never returned as CURRENT_VERSION.
-        # Without this, git describe may return v1 or v1.1 and git-cliff then
-        # computes a wrong base, silently falling back to the default.
-        CURRENT_VERSION="$(git describe --tags --match 'v[0-9]*.[0-9]*.[0-9]*' --abbrev=0 2>/dev/null || true)"
-        HAS_TAGS="false"
-        if [[ -n "${CURRENT_VERSION}" ]]; then
-          HAS_TAGS="true"
-        else
-          CURRENT_VERSION="${DEFAULT_WITH_V}"
-        fi
-        CURRENT_PLAIN="${CURRENT_VERSION#v}"
-
-        if [[ -n "${FORCED_VERSION}" ]]; then
-          NEXT_VERSION="${FORCED_VERSION}"
-        else
-          # Scope git-cliff to exactly CURRENT_VERSION..HEAD so it is unaffected
-          # by floating tags that may sit at the same commit as CURRENT_VERSION.
-          # --offline prevents any GitHub/GitLab API calls.
-          # Normalize the output: git-cliff may return the version with or without
-          # the leading 'v' depending on its config; always canonicalize to 'v' form.
-          NEXT_RAW="$(npx git-cliff "${CURRENT_VERSION}..HEAD" --bumped-version --offline 2>/dev/null || true)"
-          NEXT_VERSION="v${NEXT_RAW#v}"
-
-          # When git-cliff returns nothing (no bump-triggering commits in the range,
-          # empty range, or other non-fatal failure), fall back gracefully:
-          #   - Real tags exist → patch-bump CURRENT_VERSION (returning a version
-          #     lower than current would be wrong, and the default is unrelated).
-          #   - No tags at all  → use DEFAULT_VERSION (genuine first-release case).
-          if [[ "${NEXT_VERSION}" == "v" ]]; then
-            if [[ "${HAS_TAGS}" == "true" ]]; then
-              MAJOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f1)"
-              MINOR_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f2)"
-              PATCH_C="$(echo "${CURRENT_PLAIN}" | cut -d. -f3)"
-              NEXT_VERSION="v${MAJOR_C}.${MINOR_C}.$((PATCH_C + 1))"
-            else
-              NEXT_VERSION="${DEFAULT_WITH_V}"
-            fi
-          fi
-        fi
-
-        NEXT_PLAIN="${NEXT_VERSION#v}"
-
-        # Guard: fail when the computed next version equals the default and we are
-        # not in a genuine first-release scenario. Both sides are compared without
-        # the leading 'v' so "v1.0.0" and "1.0.0" are treated as identical.
-        if [[ "${FAIL_ON_DEFAULT}" == "true" && "${NEXT_PLAIN}" == "${DEFAULT_PLAIN}" ]]; then
-          if [[ "${HAS_TAGS}" == "true" ]]; then
-            # Real version history exists but we still computed the default —
-            # this means version detection broke (e.g. no conventional commits).
-            echo "::error::Computed next version is the default (${DEFAULT_WITH_V}), but the repository already has tags beyond it (current: ${CURRENT_VERSION}). Check that commits follow Conventional Commits format."
-            exit 1
-          fi
-          # Genuine first-release scenario: still fail if the default tag already
-          # exists — it would be a duplicate tag.
-          if git tag --list | grep -qFx "${DEFAULT_WITH_V}"; then
-            echo "::error::Computed next version is the default (${DEFAULT_WITH_V}), but that tag already exists. Check that fetch-depth: 0 is set and commits follow Conventional Commits format."
-            exit 1
-          fi
-        fi
-
-        # Guard: fail when next_version == current_version and the full patch tag already
-        # exists. Floating tags (v1, v1.1) are safe to recreate; a matching vX.Y.Z tag
-        # means we would silently re-apply an existing release — that means version
-        # detection broke (e.g. squash merge body lines not parsed as conventional commits).
-        if [[ "${FAIL_ON_SAME_VERSION}" == "true" && "${NEXT_PLAIN}" == "${CURRENT_PLAIN}" ]]; then
-          if git tag --list | grep -qFx "v${NEXT_PLAIN}"; then
-            echo "::error::next_version (${NEXT_PLAIN}) equals current_version and tag v${NEXT_PLAIN} already exists. Version detection likely failed — verify that commits follow Conventional Commits format and that fetch-depth: 0 is set."
-            exit 1
-          fi
-        fi
-
-        MAJOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1)"
-        MAJOR_MINOR="$(echo "${NEXT_PLAIN}" | cut -d. -f1-2)"
-        MAJOR_MINOR_PATCH="$(echo "${NEXT_PLAIN}" | cut -d. -f1-3)"
-
-        {
-          echo "current_version=${CURRENT_PLAIN}"
-          echo "next_version=${NEXT_PLAIN}"
-          echo "major=${MAJOR}"
-          echo "major_minor=${MAJOR_MINOR}"
-          echo "major_minor_patch=${MAJOR_MINOR_PATCH}"
-          echo "tag_major=v${MAJOR}"
-          echo "tag_major_minor=v${MAJOR_MINOR}"
-          echo "tag_major_minor_patch=v${MAJOR_MINOR_PATCH}"
-        } >> "${GITHUB_OUTPUT}"
+        bash "${GITHUB_ACTION_PATH}/compute.sh"
 
     - name: Summary
       shell: bash

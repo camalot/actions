@@ -2,7 +2,7 @@
 title: Get Next Version
 nav_order: 1
 parent: Version
-description: Calculate the next semantic version using git-cliff based on conventional commit history since the last tag, and expose the version in several forms (plain and v-prefixed; major, major.minor, major.minor.build).
+description: Calculate the next semantic version with git-cliff for an independently tagged release stream, exposing plain semantic and prefix-qualified tag forms.
 layout: default
 has_toc: false
 ---
@@ -11,7 +11,7 @@ has_toc: false
 # Get Next Version
 {: .no_toc }
 
-Calculate the next semantic version using git-cliff based on conventional commit history since the last tag, and expose the version in several forms (plain and v-prefixed; major, major.minor, major.minor.build).
+Calculate the next semantic version with git-cliff for an independently tagged release stream, exposing plain semantic and prefix-qualified tag forms.
 
 {% include toc.md %}
 

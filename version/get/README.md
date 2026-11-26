@@ -1,32 +1,34 @@
 # Get Next Version
 
-Calculates the next semantic version using [git-cliff](https://git-cliff.org/) based on [Conventional Commits](https://www.conventionalcommits.org/) history since the last tag. Exposes the version in several useful forms — plain and `v`-prefixed, and broken down by major, major.minor, and full major.minor.build components.
+Calculates the next semantic version using [git-cliff](https://git-cliff.org/) based on [Conventional Commits](https://www.conventionalcommits.org/) history since the last tag in a configured release stream. Exposes plain semantic versions and tags containing the configured prefix, including floating major and major.minor tags.
 
 ## How It Works
 
 1. Fetches the full git history (no shallow clone)
 2. Sets up Node.js using the version in `.nvmrc` if present, otherwise defaults to the latest Node.js release
-3. Installs `git-cliff` globally
-4. Determines the most recent fully-qualified `vMAJOR.MINOR.PATCH` tag as the **current version** — floating tags such as `v1` or `v1.2` are intentionally excluded to prevent an incomplete version from being used as the `git-cliff` base
-5. Runs `git-cliff --bumped-version` scoped to `CURRENT_VERSION..HEAD` to derive the **next version** — using an explicit commit range rather than `--unreleased` ensures git-cliff is unaffected by any floating tags sitting at the same commit as the current version
+3. Installs `git-cliff` and `svu`
+4. Determines the most recent fully-qualified `<tag_prefix>MAJOR.MINOR.PATCH` tag as the **current version**. Tags from other prefixes and floating tags are excluded
+5. Runs `git-cliff --bumped-version` with the same prefix-specific tag pattern, scoped to the selected tag through `HEAD`; if git-cliff cannot determine a version for an existing stream, `svu next --always` provides the fallback using that exact current tag
 6. Writes all version components to `$GITHUB_OUTPUT` and appends a summary table to `$GITHUB_STEP_SUMMARY`
 7. Optionally posts (or updates) a pull-request comment with the same summary table when `enable_pr_comment` is `true` — the comment is identified by an HTML marker (`<!-- version-get-report -->`) so re-runs replace rather than duplicate it
 
-If no prior tags exist, or if `git-cliff` cannot determine a bumped version, the `default_version` input is used as a fallback.
+If no prior tags exist in the selected stream, `default_version` is used as the first release. When git-cliff cannot determine a bumped version for an existing stream, `svu next --always` calculates the fallback from the exact selected current tag.
 
 ## Requirements
 
 - Commits must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for `git-cliff` to correctly determine the bump type (`fix` → patch, `feat` → minor, breaking change → major)
 - A `.nvmrc` file at the repository root is **optional** — if present, the Node.js version it specifies will be used; otherwise the latest Node.js release is used
 - A `cliff.toml` configuration file is recommended for customizing `git-cliff` behavior (optional — `git-cliff` ships with defaults)
+- Release streams are separated by tag prefix only. All streams currently calculate bumps from repository-wide Conventional Commit history in their tag-to-`HEAD` range; commits are not filtered by scope or path
 
 ## Inputs
 
 | Input | Required | Default | Description |
 | --- | --- | --- | --- |
-| `default_version` | No | `v0.1.0` | Fallback version (with leading `v`) used when no prior tags exist or when `git-cliff` cannot determine a bumped version. |
-| `fail_on_default` | No | `false` | When `true`, fails the action if the computed next version equals `default_version` **and** that tag already exists. This guards against silently re-using a stale default when version detection breaks (e.g. shallow clone, no conventional commits). A genuine first release — where the default tag does not yet exist — still succeeds. |
-| `fail_on_same_version` | No | `true` | When `true`, fails the action if `next_version` equals `current_version` **and** the full `vMAJOR.MINOR.PATCH` tag already exists. This prevents silently re-tagging an existing release when version detection breaks — the most common cause being a squash-merged PR whose body lines are not parsed as conventional commits. Floating tags (`v1`, `v1.1`) are never checked; only the full patch tag triggers the failure. Set to `false` to suppress the guard. |
+| `tag_prefix` | No | `v` | Prefix identifying an independent release stream. Only `<tag_prefix>MAJOR.MINOR.PATCH` tags participate in discovery. Examples: `v`, `gateway-v`, `website-v`. |
+| `default_version` | No | `v0.1.0` | Fallback version for the selected stream. Accepts `MAJOR.MINOR.PATCH` or `<tag_prefix>MAJOR.MINOR.PATCH`. |
+| `fail_on_default` | No | `false` | When `true`, fails the action if the computed next version equals `default_version` **and** the selected stream has stale or duplicate default state. This guards against silently re-using a stale default when version detection breaks. |
+| `fail_on_same_version` | No | `true` | When `true`, fails if `next_version` equals `current_version` and the full patch tag for the selected prefix already exists. Floating tags are not checked. Set to `false` to suppress the guard. |
 | `enable_pr_comment` | No | `false` | When `true`, posts (or updates) a comment on the pull request with the version summary table. Has no effect on non-pull-request events. Can also be enabled by setting the `ENABLE_PR_COMMENT` environment variable to `'true'` at the job or workflow level. |
 | `token` | No | `github.token` | GitHub token used to post or update the PR comment. Only required when `enable_pr_comment` is `true`. |
 
@@ -43,8 +45,9 @@ Setting the `FORCE_NEXT_VERSION` environment variable bypasses `git-cliff` and p
 
 **Requirements:**
 
-- Value must match `v?MAJOR.MINOR.PATCH` (e.g. `v1.12.2` or `1.12.2`)
-- The full `vMAJOR.MINOR.PATCH` tag must not already exist in the repository — if it does, the action fails with the same error as when `next_version` equals `current_version` and the tag is already present
+- Value must match `MAJOR.MINOR.PATCH` or the full configured `<tag_prefix>MAJOR.MINOR.PATCH` form
+- A full tag from another release stream is rejected instead of being reinterpreted as the configured stream
+- The resulting full tag for the configured prefix must not already exist
 
 **Use case:** Skipping a version that cannot be used — for example, when a tag like `v1.12.1` is locked by GitHub and the next intended release must be `v1.12.2`.
 
@@ -52,14 +55,14 @@ Setting the `FORCE_NEXT_VERSION` environment variable bypasses `git-cliff` and p
 
 | Output | Example | Description |
 | --- | --- | --- |
-| `current_version` | `1.2.3` | The most recent fully-qualified `vMAJOR.MINOR.PATCH` tag in the repo, without the leading `v`. |
-| `next_version` | `1.2.4` | The next version determined by `git-cliff`, without the leading `v`. |
+| `current_version` | `1.2.3` | The most recent fully-qualified tag in the selected stream, without `tag_prefix`. |
+| `next_version` | `1.2.4` | The next version determined by `git-cliff`, without `tag_prefix`. |
 | `major` | `1` | Major component of `next_version`. |
 | `major_minor` | `1.2` | Major.Minor of `next_version`. |
 | `major_minor_patch` | `1.2.4` | Full Major.Minor.Patch of `next_version`. |
-| `tag_major` | `v1` | Major tag form with `v` prefix. |
-| `tag_major_minor` | `v1.2` | Major.Minor tag form with `v` prefix. |
-| `tag_major_minor_patch` | `v1.2.4` | Full tag form with `v` prefix. |
+| `tag_major` | `v1` | Major tag form with `tag_prefix` (for example, `gateway-v4`). |
+| `tag_major_minor` | `v1.2` | Major.Minor tag form with `tag_prefix`. |
+| `tag_major_minor_patch` | `v1.2.4` | Full tag form with `tag_prefix`. |
 
 ## Examples
 
@@ -75,6 +78,42 @@ jobs:
 
       - run: echo "Next version is ${{ steps.version.outputs.next_version }}"
 ```
+
+---
+
+### Independently version multiple monorepo release streams
+
+Each invocation uses only full patch tags with its configured prefix:
+
+```yaml
+jobs:
+  versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: client-version
+        uses: camalot/actions/version/get@v1
+        with:
+          default_version: v0.1.0
+          tag_prefix: v
+
+      - id: gateway-version
+        uses: camalot/actions/version/get@v1
+        with:
+          default_version: gateway-v0.1.0
+          tag_prefix: gateway-v
+
+      - id: website-version
+        uses: camalot/actions/version/get@v1
+        with:
+          default_version: website-v0.1.0
+          tag_prefix: website-v
+```
+
+For a repository containing `v1.2.3`, `gateway-v4.5.6`, and `website-v2.0.1`, these steps resolve their respective current versions independently. Their semantic outputs remain unprefixed, while `tag_major_minor_patch` becomes the matching full tag.
 
 ---
 
@@ -251,7 +290,7 @@ jobs:
       - run: echo "Next version is ${{ steps.version.outputs.tag_major_minor_patch }}"
 ```
 
-The value may include or omit the leading `v`. The action fails if the tag already exists in the repository.
+The value may include or omit the configured prefix. For `tag_prefix: gateway-v`, both `4.5.6` and `gateway-v4.5.6` are valid, but `website-v4.5.6` is not. The action fails if the resulting full tag already exists in the repository.
 
 ---
 
